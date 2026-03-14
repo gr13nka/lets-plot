@@ -433,6 +433,14 @@ class GeomProvider internal constructor(
             )
         }
 
+        fun smiley(supplier: (Context) -> Geom): GeomProvider {
+            return GeomProvider(
+                GeomKind.SMILEY,
+                SmileyGeom.HANDLES_GROUPS,
+                supplier
+            )
+        }
+
         fun blank(): GeomProvider {
             return GeomProvider(
                 GeomKind.BLANK,

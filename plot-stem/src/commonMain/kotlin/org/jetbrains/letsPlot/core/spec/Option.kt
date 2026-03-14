@@ -473,6 +473,10 @@ object Option {
             const val PIVOT = "pivot"
         }
 
+        object Smiley {
+            const val HAPPINESS = "happiness"
+        }
+
         object Bracket {
             const val BRACKET_SHORTEN = "bracket_shorten"
             const val TIP_LENGTH_UNIT = "tip_length_unit"
@@ -1137,6 +1141,7 @@ object Option {
         const val PIE = "pie"
         const val LOLLIPOP = "lollipop"
         const val BRACKET = "bracket"
+        const val SMILEY = "smiley"
         const val BLANK = "blank"
 
         private val GEOM_KIND_MAP: Map<String, GeomKind>
@@ -1197,6 +1202,7 @@ object Option {
             map[PIE] = GeomKind.PIE
             map[LOLLIPOP] = GeomKind.LOLLIPOP
             map[BRACKET] = GeomKind.BRACKET
+            map[SMILEY] = GeomKind.SMILEY
             map[BLANK] = GeomKind.BLANK
 
             GEOM_KIND_MAP = map

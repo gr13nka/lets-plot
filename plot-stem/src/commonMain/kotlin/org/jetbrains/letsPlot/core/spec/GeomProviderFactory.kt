@@ -451,6 +451,14 @@ internal object GeomProviderFactory {
                 geom
             }
 
+            GeomKind.SMILEY -> GeomProvider.smiley {
+                val geom = SmileyGeom()
+                if (layerConfig.hasOwn(Option.Geom.Smiley.HAPPINESS)) {
+                    geom.happiness = layerConfig.getDouble(Option.Geom.Smiley.HAPPINESS)!!
+                }
+                geom
+            }
+
             GeomKind.BRACKET -> GeomProvider.bracket {
                 val geom = BracketGeom()
                 applyTextOptions(layerConfig, geom, expFormat, tz)

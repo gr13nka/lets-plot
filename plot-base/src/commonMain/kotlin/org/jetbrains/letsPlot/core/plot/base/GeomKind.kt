@@ -60,6 +60,7 @@ enum class GeomKind {
     PIE,
     LOLLIPOP,
     BRACKET,
+    SMILEY,
     BLANK,
 }
 

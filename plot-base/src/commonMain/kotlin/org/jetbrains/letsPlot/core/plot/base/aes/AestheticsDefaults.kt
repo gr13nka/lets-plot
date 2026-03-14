@@ -134,6 +134,12 @@ class AestheticsDefaults private constructor(
                 .update(Aes.SHAPE, NamedShape.STICK_CIRCLE)
         }
 
+        private fun smiley(geomTheme: GeomTheme): AestheticsDefaults {
+            return base(geomTheme)
+                .update(Aes.SIZE, 10.0)
+                .update(Aes.FILL, Color(0xFF, 0xD9, 0x3D))  // yellow
+        }
+
         private fun base(geomTheme: GeomTheme): AestheticsDefaults {
             return AestheticsDefaults(geomTheme)
         }
@@ -205,6 +211,8 @@ class AestheticsDefaults private constructor(
                 GeomKind.IMAGE,
                 GeomKind.BRACKET,
                 GeomKind.LIVE_MAP -> base(geomTheme)
+
+                GeomKind.SMILEY -> smiley(geomTheme)
             }
         }
     }

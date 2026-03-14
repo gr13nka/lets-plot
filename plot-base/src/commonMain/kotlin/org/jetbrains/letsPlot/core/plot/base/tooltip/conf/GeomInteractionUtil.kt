@@ -206,6 +206,7 @@ object GeomInteractionUtil {
             GeomKind.VIOLIN,
             GeomKind.SINA,
             GeomKind.LOLLIPOP,
+            GeomKind.SMILEY,
             GeomKind.SPOKE,
             GeomKind.CURVE -> return GeomTooltipSetup.bivariateFunction(GeomTooltipSetup.NON_AREA_GEOM)
 

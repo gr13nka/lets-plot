@@ -29,7 +29,7 @@ __all__ = ['geom_point', 'geom_path', 'geom_line',
            'geom_freqpoly', 'geom_step', 'geom_rect',
            'geom_segment', 'geom_curve', 'geom_spoke',
            'geom_text', 'geom_label', 'geom_text_repel', 'geom_label_repel', 'geom_pie', 'geom_lollipop',
-           'geom_bracket',
+           'geom_bracket', 'geom_smiley',
            'geom_count',
            'geom_blank', 'geom_stat_r2',
            'layer_tooltips']
@@ -9209,6 +9209,88 @@ def geom_bracket(mapping=None, *, data=None, position=None, show_legend=None,
                  bracket_shorten=bracket_shorten,
                  tip_length_unit=tip_length_unit,
                  color_by=color_by,
+                 **other_args)
+
+
+def geom_smiley(mapping=None, *, data=None, stat=None, position=None, show_legend=None, inherit_aes=None,
+                manual_key=None, sampling=None, tooltips=None,
+                happiness=None,
+                color_by=None, fill_by=None,
+                **other_args):
+    """
+    Draw smiley faces.
+
+    Parameters
+    ----------
+    mapping : ``FeatureSpec``
+        Set of aesthetic mappings created by `aes() <https://lets-plot.org/python/pages/api/lets_plot.aes.html>`__ function.
+        Aesthetic mappings describe the way that variables in the data are
+        mapped to plot "aesthetics".
+    data : dict or Pandas or Polars ``DataFrame``
+        The data to be displayed in this layer. If None, the default, the data
+        is inherited from the plot data as specified in the call to ggplot.
+    stat : str, default='identity'
+        The statistical transformation to use on the data for this layer, as a string.
+    position : str or ``FeatureSpec``, default='identity'
+        Position adjustment.
+    show_legend : bool, default=True
+        True - include this layer in the legends.
+    manual_key : str or ``layer_key``
+        The key to show in the manual legend.
+    sampling : ``FeatureSpec``
+        Result of the call to the ``sampling_xxx()`` function.
+    tooltips : ``layer_tooltips``
+        Result of the call to the ``layer_tooltips()`` function.
+    happiness : float, default=0.5
+        Mouth curvature from -1.0 (frown) to 1.0 (smile).
+    color_by : {'fill', 'color', 'paint_a', 'paint_b', 'paint_c'}, default='color'
+        Define the color aesthetic for the geometry.
+    fill_by : {'fill', 'color', 'paint_a', 'paint_b', 'paint_c'}, default='fill'
+        Define the fill aesthetic for the geometry.
+    other_args
+        Other arguments passed on to the layer.
+        These are often aesthetics settings used to set an aesthetic to a fixed value,
+        like color='red', fill='yellow', size=3.
+
+    Returns
+    -------
+    ``LayerSpec``
+        Geom object specification.
+
+    Notes
+    -----
+    ``geom_smiley()`` understands the following aesthetics mappings:
+
+    - x : x-axis coordinate of the smiley center.
+    - y : y-axis coordinate of the smiley center.
+    - alpha : transparency level of a layer. Accept values between 0 and 1.
+    - color (colour) : color of the geometry lines (eyes, mouth outline). For more info see `Color and Fill <https://lets-plot.org/python/pages/aesthetics.html#color-and-fill>`__.
+    - fill : fill color of the face circle. For more info see `Color and Fill <https://lets-plot.org/python/pages/aesthetics.html#color-and-fill>`__.
+    - size : size of the smiley face.
+    Examples
+    --------
+    .. jupyter-execute::
+        :linenos:
+        :emphasize-lines: 7
+
+        from lets_plot import *
+        LetsPlot.setup_html()
+        data = {'x': [1, 2, 3], 'y': [1, 2, 1]}
+        ggplot(data, aes('x', 'y')) + geom_smiley(happiness=0.8, size=10, fill='yellow', color='black')
+
+    """
+    return _geom('smiley',
+                 mapping=mapping,
+                 data=data,
+                 stat=stat,
+                 position=position,
+                 show_legend=show_legend,
+                 inherit_aes=inherit_aes,
+                 manual_key=manual_key,
+                 sampling=sampling,
+                 tooltips=tooltips,
+                 happiness=happiness,
+                 color_by=color_by, fill_by=fill_by,
                  **other_args)
 
 

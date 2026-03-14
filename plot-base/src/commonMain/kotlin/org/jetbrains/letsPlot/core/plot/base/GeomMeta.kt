@@ -523,6 +523,14 @@ object GeomMeta {
                 Aes.LINETYPE
             )
 
+            GeomKind.SMILEY -> listOf(
+                Aes.X, Aes.Y,
+                Aes.SIZE,
+                Aes.COLOR,
+                Aes.FILL,
+                Aes.ALPHA
+            )
+
             GeomKind.BRACKET -> listOf(
                 Aes.XMIN,
                 Aes.XMAX,

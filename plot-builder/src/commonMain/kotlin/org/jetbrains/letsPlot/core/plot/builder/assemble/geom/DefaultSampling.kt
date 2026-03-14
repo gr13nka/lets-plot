@@ -74,6 +74,7 @@ object DefaultSampling {
     val POINT_RANGE = BAR
     val BRACKET = BAR
     val LOLLIPOP = BAR
+    val SMILEY = POINT
 
     val HISTOGRAM = BAR
     val DOT_PLOT = BAR

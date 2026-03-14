@@ -87,6 +87,8 @@ internal class DefaultGeomTheme private constructor(
 
                 GeomKind.PIE -> PIE_SIZE
 
+                GeomKind.SMILEY -> COMMON_POINT_SIZE
+
                 GeomKind.TILE,
                 GeomKind.BIN_2D,
                 GeomKind.HEX -> ZERO_LINE_WIDTH
@@ -147,7 +149,8 @@ internal class DefaultGeomTheme private constructor(
                 GeomKind.DENSITY2DF,
                 GeomKind.DOT_PLOT,
                 GeomKind.RASTER,
-                GeomKind.Y_DOT_PLOT -> colorTheme.brush()
+                GeomKind.Y_DOT_PLOT,
+                GeomKind.SMILEY -> colorTheme.brush()
 
                 GeomKind.HISTOGRAM,
                 GeomKind.SMOOTH,

@@ -113,6 +113,7 @@ class GeomProto(val geomKind: GeomKind) {
             TEXT, LABEL, TEXT_REPEL, LABEL_REPEL -> DefaultSampling.TEXT
             PIE -> DefaultSampling.PIE
             LOLLIPOP -> DefaultSampling.LOLLIPOP
+            SMILEY -> DefaultSampling.SMILEY
             BRACKET -> DefaultSampling.BRACKET
             LIVE_MAP,
             RASTER,
