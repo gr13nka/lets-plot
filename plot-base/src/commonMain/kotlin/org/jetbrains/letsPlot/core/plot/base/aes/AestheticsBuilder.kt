@@ -20,6 +20,7 @@ import org.jetbrains.letsPlot.core.plot.base.Aes.Companion.FLOW
 import org.jetbrains.letsPlot.core.plot.base.Aes.Companion.FONTFACE
 import org.jetbrains.letsPlot.core.plot.base.Aes.Companion.FRAME
 import org.jetbrains.letsPlot.core.plot.base.Aes.Companion.HEIGHT
+import org.jetbrains.letsPlot.core.plot.base.Aes.Companion.HAPPINESS
 import org.jetbrains.letsPlot.core.plot.base.Aes.Companion.HJUST
 import org.jetbrains.letsPlot.core.plot.base.Aes.Companion.LABEL
 import org.jetbrains.letsPlot.core.plot.base.Aes.Companion.LINEHEIGHT
@@ -216,6 +217,10 @@ class AestheticsBuilder @JvmOverloads constructor(private var myDataPointCount: 
 
     fun explode(v: (Int) -> Double?): AestheticsBuilder {
         return aes(EXPLODE, v)
+    }
+
+    fun happiness(v: (Int) -> Double?): AestheticsBuilder {
+        return aes(HAPPINESS, v)
     }
 
     fun sizeStart(v: (Int) -> Double?): AestheticsBuilder {

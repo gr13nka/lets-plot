@@ -17,6 +17,7 @@ import org.jetbrains.letsPlot.core.plot.base.Aes.Companion.FLOW
 import org.jetbrains.letsPlot.core.plot.base.Aes.Companion.FONTFACE
 import org.jetbrains.letsPlot.core.plot.base.Aes.Companion.FRAME
 import org.jetbrains.letsPlot.core.plot.base.Aes.Companion.HEIGHT
+import org.jetbrains.letsPlot.core.plot.base.Aes.Companion.HAPPINESS
 import org.jetbrains.letsPlot.core.plot.base.Aes.Companion.HJUST
 import org.jetbrains.letsPlot.core.plot.base.Aes.Companion.INTERCEPT
 import org.jetbrains.letsPlot.core.plot.base.Aes.Companion.LABEL
@@ -246,6 +247,9 @@ abstract class AesVisitor<T> {
         if (aes == EXPLODE) {
             return explode()
         }
+        if (aes == HAPPINESS) {
+            return happiness()
+        }
         if (aes == SIZE_START) {
             return sizeStart()
         }
@@ -386,6 +390,8 @@ abstract class AesVisitor<T> {
     protected abstract fun slice(): T
 
     protected abstract fun explode(): T
+
+    protected abstract fun happiness(): T
 
     protected abstract fun sizeStart(): T
 

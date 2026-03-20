@@ -131,6 +131,9 @@ class Aes<T> private constructor(val name: String, val isNumeric: Boolean = true
         // pie geom - to explode sector from center point, detaching it from the main pie
         val EXPLODE: Aes<Double> =
             Aes("explode")
+        // smiley geom - mouth curvature from -1.0 (frown) to 1.0 (smile)
+        val HAPPINESS: Aes<Double> =
+            Aes("happiness")
 
         val SIZE_START: Aes<Double> = Aes("size_start")
         val SIZE_END: Aes<Double> = Aes("size_end")
@@ -250,6 +253,7 @@ class Aes<T> private constructor(val name: String, val isNumeric: Boolean = true
                     aes == LINEHEIGHT ||
                     aes == SLICE ||
                     aes == EXPLODE ||
+                    aes == HAPPINESS ||
                     aes == SIZE_START ||
                     aes == SIZE_END ||
                     aes == STROKE_START ||

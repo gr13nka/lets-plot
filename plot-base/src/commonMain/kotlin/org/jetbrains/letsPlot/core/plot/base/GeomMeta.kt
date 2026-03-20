@@ -526,9 +526,11 @@ object GeomMeta {
             GeomKind.SMILEY -> listOf(
                 Aes.X, Aes.Y,
                 Aes.SIZE,
+                Aes.LINEWIDTH,
                 Aes.COLOR,
                 Aes.FILL,
-                Aes.ALPHA
+                Aes.ALPHA,
+                Aes.HAPPINESS
             )
 
             GeomKind.BRACKET -> listOf(

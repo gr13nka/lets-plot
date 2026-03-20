@@ -456,6 +456,7 @@ internal object GeomProviderFactory {
                 if (layerConfig.hasOwn(Option.Geom.Smiley.HAPPINESS)) {
                     geom.happiness = layerConfig.getDouble(Option.Geom.Smiley.HAPPINESS)!!
                 }
+                geom.sizeUnit = layerConfig.getString(Option.Geom.Smiley.SIZE_UNIT)?.lowercase()
                 geom
             }
 

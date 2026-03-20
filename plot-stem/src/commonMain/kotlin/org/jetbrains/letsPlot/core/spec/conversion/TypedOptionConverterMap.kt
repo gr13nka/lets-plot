@@ -17,6 +17,7 @@ import org.jetbrains.letsPlot.core.plot.base.Aes.Companion.FLOW
 import org.jetbrains.letsPlot.core.plot.base.Aes.Companion.FONTFACE
 import org.jetbrains.letsPlot.core.plot.base.Aes.Companion.FRAME
 import org.jetbrains.letsPlot.core.plot.base.Aes.Companion.HEIGHT
+import org.jetbrains.letsPlot.core.plot.base.Aes.Companion.HAPPINESS
 import org.jetbrains.letsPlot.core.plot.base.Aes.Companion.HJUST
 import org.jetbrains.letsPlot.core.plot.base.Aes.Companion.INTERCEPT
 import org.jetbrains.letsPlot.core.plot.base.Aes.Companion.LABEL
@@ -141,6 +142,7 @@ internal class TypedOptionConverterMap(colorConverter: ColorOptionConverter) {
         this.put(RADIUS, DOUBLE_CVT)
         this.put(SLICE, DOUBLE_CVT)
         this.put(EXPLODE, DOUBLE_CVT)
+        this.put(HAPPINESS, DOUBLE_CVT)
 
         this.put(SIZE_START, DOUBLE_CVT)
         this.put(SIZE_END, DOUBLE_CVT)

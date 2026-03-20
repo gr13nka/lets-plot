@@ -9214,7 +9214,7 @@ def geom_bracket(mapping=None, *, data=None, position=None, show_legend=None,
 
 def geom_smiley(mapping=None, *, data=None, stat=None, position=None, show_legend=None, inherit_aes=None,
                 manual_key=None, sampling=None, tooltips=None,
-                happiness=None,
+                happiness=None, size_unit=None,
                 color_by=None, fill_by=None,
                 **other_args):
     """
@@ -9243,6 +9243,12 @@ def geom_smiley(mapping=None, *, data=None, stat=None, position=None, show_legen
         Result of the call to the ``layer_tooltips()`` function.
     happiness : float, default=0.5
         Mouth curvature from -1.0 (frown) to 1.0 (smile).
+    size_unit : {'x', 'y', 'min', 'max'}
+        Relate the size of the smiley to the length of the unit step along one of the axes.
+        'x' uses the unit step along the x-axis, 'y' uses the unit step along the y-axis.
+        'min' uses the smaller of the unit steps along the x- and y-axes.
+        'max' uses the larger of the unit steps along the x- and y-axes.
+        If None, no fitting is performed.
     color_by : {'fill', 'color', 'paint_a', 'paint_b', 'paint_c'}, default='color'
         Define the color aesthetic for the geometry.
     fill_by : {'fill', 'color', 'paint_a', 'paint_b', 'paint_c'}, default='fill'
@@ -9266,6 +9272,7 @@ def geom_smiley(mapping=None, *, data=None, stat=None, position=None, show_legen
     - alpha : transparency level of a layer. Accept values between 0 and 1.
     - color (colour) : color of the geometry lines (eyes, mouth outline). For more info see `Color and Fill <https://lets-plot.org/python/pages/aesthetics.html#color-and-fill>`__.
     - fill : fill color of the face circle. For more info see `Color and Fill <https://lets-plot.org/python/pages/aesthetics.html#color-and-fill>`__.
+    - happiness : mouth curvature from -1.0 (frown) to 1.0 (smile).
     - size : size of the smiley face.
     Examples
     --------
@@ -9275,8 +9282,8 @@ def geom_smiley(mapping=None, *, data=None, stat=None, position=None, show_legen
 
         from lets_plot import *
         LetsPlot.setup_html()
-        data = {'x': [1, 2, 3], 'y': [1, 2, 1]}
-        ggplot(data, aes('x', 'y')) + geom_smiley(happiness=0.8, size=10, fill='yellow', color='black')
+        data = {'x': [1, 2, 3], 'y': [1, 2, 1], 'h': [1.0, 0.0, -1.0]}
+        ggplot(data, aes('x', 'y', happiness='h')) + geom_smiley(size=10, fill='yellow', color='black')
 
     """
     return _geom('smiley',
@@ -9290,6 +9297,7 @@ def geom_smiley(mapping=None, *, data=None, stat=None, position=None, show_legen
                  sampling=sampling,
                  tooltips=tooltips,
                  happiness=happiness,
+                 size_unit=size_unit,
                  color_by=color_by, fill_by=fill_by,
                  **other_args)
 

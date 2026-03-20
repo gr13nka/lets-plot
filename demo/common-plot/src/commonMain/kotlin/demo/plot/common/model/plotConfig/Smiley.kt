@@ -11,6 +11,7 @@ class Smiley {
     fun plotSpecList(): List<MutableMap<String, Any>> {
         return listOf(
             basic(),
+            sizeUnit(),
             happinessRange(),
             aesthetics(),
             withOtherLayers(),
@@ -37,6 +38,32 @@ class Smiley {
                 {
                   'geom': 'smiley'
                 }
+              ]
+            }
+        """.trimIndent()
+
+        return HashMap(parsePlotSpec(spec))
+    }
+
+    private fun sizeUnit(): MutableMap<String, Any> {
+        val spec = """
+            {
+              'kind': 'plot',
+              'ggtitle': {
+                'text': 'size_unit=x'
+              },
+              'layers': [
+                {
+                  'geom': 'smiley',
+                  'x': 0,
+                  'size': 1,
+                  'size_unit': 'x'
+                }
+              ],
+              'coord': {"name": "fixed", "ratio": 1.0, "flip": "False"},
+              'scales': [
+                {'aesthetic': 'x', 'limits': [-2, 2]},
+                {'aesthetic': 'y', 'limits': [-2, 2]}
               ]
             }
         """.trimIndent()

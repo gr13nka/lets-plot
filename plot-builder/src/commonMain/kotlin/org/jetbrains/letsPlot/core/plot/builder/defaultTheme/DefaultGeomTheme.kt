@@ -57,7 +57,6 @@ internal class DefaultGeomTheme private constructor(
 
         // defaults for geomKind
         internal fun forGeomKind(geomKind: GeomKind, colorTheme: ColorTheme): GeomTheme {
-
             // Size: point size or line width - depending on the geom kind.
             val size = when (geomKind) {
                 GeomKind.POINT,
@@ -105,7 +104,7 @@ internal class DefaultGeomTheme private constructor(
             val segmentColor = when (geomKind) {
                 GeomKind.TEXT_REPEL,
                 GeomKind.LABEL_REPEL,
-                GeomKind.BRACKET-> DEFAULT_SEGMENT_COLOR
+                GeomKind.BRACKET -> DEFAULT_SEGMENT_COLOR
                 else -> Color.TRANSPARENT
             }
             val segmentSize = COMMON_LINE_WIDTH
@@ -126,7 +125,7 @@ internal class DefaultGeomTheme private constructor(
 
                 GeomKind.CONTOURF,
                 GeomKind.DENSITY2DF -> Color.TRANSPARENT
-
+                GeomKind.SMILEY -> Color.BLACK
                 GeomKind.SMOOTH -> Color.MAGENTA
 
                 else -> colorTheme.pen()
@@ -149,14 +148,17 @@ internal class DefaultGeomTheme private constructor(
                 GeomKind.DENSITY2DF,
                 GeomKind.DOT_PLOT,
                 GeomKind.RASTER,
-                GeomKind.Y_DOT_PLOT,
-                GeomKind.SMILEY -> colorTheme.brush()
+                GeomKind.Y_DOT_PLOT -> colorTheme.brush()
+
+
 
                 GeomKind.HISTOGRAM,
                 GeomKind.SMOOTH,
                 GeomKind.TILE,
                 GeomKind.BIN_2D,
                 GeomKind.HEX -> colorTheme.pen()
+
+                GeomKind.SMILEY -> Color.YELLOW
 
                 else -> colorTheme.paper()
             }

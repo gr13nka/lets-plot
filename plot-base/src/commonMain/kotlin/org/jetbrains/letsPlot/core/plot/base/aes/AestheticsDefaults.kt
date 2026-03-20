@@ -136,8 +136,7 @@ class AestheticsDefaults private constructor(
 
         private fun smiley(geomTheme: GeomTheme): AestheticsDefaults {
             return base(geomTheme)
-                .update(Aes.SIZE, 10.0)
-                .update(Aes.FILL, Color(0xFF, 0xD9, 0x3D))  // yellow
+                .update(Aes.SIZE, 14.0)
         }
 
         private fun base(geomTheme: GeomTheme): AestheticsDefaults {

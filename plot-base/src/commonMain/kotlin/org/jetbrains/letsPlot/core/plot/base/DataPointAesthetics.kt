@@ -217,6 +217,10 @@ abstract class DataPointAesthetics {
         return get(Aes.EXPLODE)
     }
 
+    fun happiness(): Double? {
+        return get(Aes.HAPPINESS)
+    }
+
     fun sizeStart(): Double? {
         return get(Aes.SIZE_START)
     }
