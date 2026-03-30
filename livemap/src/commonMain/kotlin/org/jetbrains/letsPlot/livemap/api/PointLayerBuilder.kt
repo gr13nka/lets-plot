@@ -13,6 +13,7 @@ import org.jetbrains.letsPlot.livemap.chart.ChartElementComponent
 import org.jetbrains.letsPlot.livemap.chart.IndexComponent
 import org.jetbrains.letsPlot.livemap.chart.LocatorComponent
 import org.jetbrains.letsPlot.livemap.chart.PointComponent
+import org.jetbrains.letsPlot.livemap.chart.SmileyComponent
 import org.jetbrains.letsPlot.livemap.chart.point.PointLocator
 import org.jetbrains.letsPlot.livemap.chart.point.PointRenderer
 import org.jetbrains.letsPlot.livemap.core.ecs.EcsEntity
@@ -69,6 +70,7 @@ class PointEntityBuilder(
     var label: String = ""
     var shape: Int = 1
     var angle: Double = 0.0
+    var smileyHappiness: Double? = null
 
     fun build(nonInteractive: Boolean = false): EcsEntity {
         return myFactory.createStaticFeatureWithLocation("map_ent_s_point", point)
@@ -109,6 +111,7 @@ class PointEntityBuilder(
                     +PointComponent().apply {
                         size = Scalar(radius * 2.0)
                     }
+                    smileyHappiness?.let { +SmileyComponent(it) }
 
                     +WorldOriginComponent(worldPoint)
                     +ScreenDimensionComponent()

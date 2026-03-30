@@ -61,6 +61,7 @@ internal object SvgTextElementAttrMapping : SvgAttrMapping<Text>() {
             SvgShape.STROKE.name -> target.stroke = toColor(value)
             SvgShape.STROKE_OPACITY.name -> target.strokeOpacity = value!!.asFloat
             SvgShape.STROKE_WIDTH.name -> target.strokeWidth = value!!.asFloat
+            SvgShape.STROKE_LINECAP.name -> target.strokeLineCap = value!!.asLineCap
             SvgConstants.SVG_STROKE_DASHARRAY_ATTRIBUTE -> {
                 val strokeDashArray = (value as String).split(",").map(String::toFloat)
                 target.strokeDashArray = strokeDashArray

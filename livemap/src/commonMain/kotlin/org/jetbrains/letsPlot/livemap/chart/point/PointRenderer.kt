@@ -7,8 +7,10 @@ package org.jetbrains.letsPlot.livemap.chart.point
 
 import org.jetbrains.letsPlot.commons.intern.math.toRadians
 import org.jetbrains.letsPlot.core.canvas.Context2d
+import org.jetbrains.letsPlot.core.canvas.LineCap
 import org.jetbrains.letsPlot.livemap.chart.ChartElementComponent
 import org.jetbrains.letsPlot.livemap.chart.PointComponent
+import org.jetbrains.letsPlot.livemap.chart.SmileyComponent
 import org.jetbrains.letsPlot.livemap.core.ecs.EcsEntity
 import org.jetbrains.letsPlot.livemap.mapengine.RenderHelper
 import org.jetbrains.letsPlot.livemap.mapengine.Renderer
@@ -26,14 +28,27 @@ class PointRenderer(
     override fun render(entity: EcsEntity, ctx: Context2d, renderHelper: RenderHelper) {
         val chartElement = entity.get<ChartElementComponent>()
         val pointData = entity.get<PointComponent>()
+        val radius = pointData.scaledRadius(chartElement.scalingSizeFactor).value
+        val strokeWidth = chartElement.scaledStrokeWidth()
 
         ctx.translate(renderHelper.dimToScreen(entity.get<WorldOriginComponent>().origin))
+
+        entity.tryGet<SmileyComponent>()?.let {
+            drawSmiley(
+                ctx = ctx,
+                radius = radius,
+                strokeWidth = strokeWidth,
+                happiness = it.happiness,
+                chartElement = chartElement
+            )
+            return
+        }
 
         ctx.beginPath()
         drawMarker(
             ctx = ctx,
-            radius = pointData.scaledRadius(chartElement.scalingSizeFactor).value,
-            stroke = chartElement.scaledStrokeWidth(),
+            radius = radius,
+            stroke = strokeWidth,
             shape = shape,
             angle = angle
         )
@@ -47,6 +62,60 @@ class PointRenderer(
             ctx.stroke()
         }
     }
+
+    private fun drawSmiley(
+        ctx: Context2d,
+        radius: Double,
+        strokeWidth: Double,
+        happiness: Double,
+        chartElement: ChartElementComponent
+    ) {
+        val faceRadius = (radius - strokeWidth / 2.0).coerceAtLeast(0.0)
+
+        ctx.beginPath()
+        circle(ctx, 0.0, 0.0, faceRadius)
+        if (chartElement.fillColor != null) {
+            ctx.setFillStyle(chartElement.scaledFillColor())
+            ctx.fill()
+        }
+        if (chartElement.strokeColor != null && strokeWidth > 0.0) {
+            ctx.setStrokeStyle(chartElement.scaledStrokeColor())
+            ctx.setLineWidth(strokeWidth)
+            ctx.stroke()
+        }
+
+        if (chartElement.strokeColor == null) {
+            return
+        }
+
+        val eyeRadius = 0.08 * faceRadius + 0.15 * strokeWidth
+        ctx.beginPath()
+        circle(ctx, -0.25 * faceRadius, -0.2 * faceRadius, eyeRadius)
+        circle(ctx, 0.25 * faceRadius, -0.2 * faceRadius, eyeRadius)
+        ctx.setFillStyle(chartElement.scaledStrokeColor())
+        ctx.fill()
+
+        val mouthLeftX = -0.4 * faceRadius
+        val mouthLeftY = 0.3 * faceRadius
+        val mouthRightX = 0.4 * faceRadius
+        val mouthRightY = 0.3 * faceRadius
+        val qcpX = 0.0
+        val qcpY = 0.3 * faceRadius + happiness * 0.4 * faceRadius
+        val cp1X = mouthLeftX + 2.0 / 3.0 * (qcpX - mouthLeftX)
+        val cp1Y = mouthLeftY + 2.0 / 3.0 * (qcpY - mouthLeftY)
+        val cp2X = mouthRightX + 2.0 / 3.0 * (qcpX - mouthRightX)
+        val cp2Y = mouthRightY + 2.0 / 3.0 * (qcpY - mouthRightY)
+
+        ctx.beginPath()
+        ctx.moveTo(mouthLeftX, mouthLeftY)
+        ctx.bezierCurveTo(cp1X, cp1Y, cp2X, cp2Y, mouthRightX, mouthRightY)
+        ctx.setStrokeStyle(chartElement.scaledStrokeColor())
+        ctx.setLineWidth(strokeWidth)
+        ctx.setLineCap(LineCap.ROUND)
+        ctx.stroke()
+        ctx.setLineCap(LineCap.BUTT)
+    }
+
     private fun drawMarker(ctx: Context2d, radius: Double, stroke: Double, shape: Int, angle: Double) {
         val needToRotate = shape !in listOf(1, 10, 16, 19, 20, 21) && angle != 0.0
         if (needToRotate) {
@@ -109,8 +178,12 @@ class PointRenderer(
         }
     }
 
+    private fun circle(ctx: Context2d, x: Double, y: Double, r: Double) {
+        ctx.arc(x, y, r, 0.0, 2 * PI)
+    }
+
     private fun circle(ctx: Context2d, r: Double) {
-        ctx.arc(0.0, 0.0, r, 0.0, 2 * PI)
+        circle(ctx, 0.0, 0.0, r)
     }
 
     private fun square(ctx: Context2d, r: Double) {

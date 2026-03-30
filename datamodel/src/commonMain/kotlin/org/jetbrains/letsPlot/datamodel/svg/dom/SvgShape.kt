@@ -10,6 +10,15 @@ import org.jetbrains.letsPlot.commons.intern.observable.property.WritablePropert
 import org.jetbrains.letsPlot.commons.values.Color
 
 interface SvgShape {
+    enum class StrokeLineCap(private val myAttrString: String) {
+        BUTT("butt"),
+        ROUND("round"),
+        SQUARE("square");
+
+        override fun toString(): String {
+            return myAttrString
+        }
+    }
 
     fun fill(): Property<SvgColor?>
 
@@ -44,5 +53,7 @@ interface SvgShape {
             SvgAttributeSpec.createSpec(SvgConstants.SVG_STROKE_DASHARRAY_ATTRIBUTE)
         val STROKE_DASHOFFSET: SvgAttributeSpec<Double> =
             SvgAttributeSpec.createSpec(SvgConstants.SVG_STROKE_DASHOFFSET_ATTRIBUTE)
+        val STROKE_LINECAP: SvgAttributeSpec<StrokeLineCap> =
+            SvgAttributeSpec.createSpec(SvgConstants.SVG_STROKE_LINECAP_ATTRIBUTE)
     }
 }

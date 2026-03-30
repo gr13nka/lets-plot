@@ -6,12 +6,14 @@
 package org.jetbrains.letsPlot.raster.scene
 
 import org.jetbrains.letsPlot.commons.values.Color
+import org.jetbrains.letsPlot.core.canvas.LineCap
 
 internal class Paint {
     var isStroke: Boolean = false
     var color: Color = Color.BLACK
     var strokeWidth: Float = 1f
     var strokeMiter: Float = 10f
+    var strokeLineCap: LineCap = LineCap.BUTT
     var strokeDashList: DoubleArray = doubleArrayOf()
     var strokeDashOffset: Float = 0f
 }

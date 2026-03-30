@@ -7,6 +7,7 @@ package org.jetbrains.letsPlot.raster.scene
 
 import org.jetbrains.letsPlot.commons.values.Color
 import org.jetbrains.letsPlot.core.canvas.Context2d
+import org.jetbrains.letsPlot.core.canvas.LineCap
 
 internal abstract class Figure : Node() {
     var stroke: Color? by variableAttr(null)
@@ -15,6 +16,7 @@ internal abstract class Figure : Node() {
     var strokeDashArray: List<Double> by variableAttr(emptyList())
     var strokeDashOffset: Float by variableAttr(0f) // not mandatory, default works fine
     var strokeMiter: Float? by variableAttr(null) // not mandatory, default works fine
+    var strokeLineCap: LineCap by variableAttr(LineCap.BUTT)
 
     var fill: Color? by variableAttr(null)
     var fillOpacity: Float by variableAttr(1f)
@@ -34,7 +36,8 @@ internal abstract class Figure : Node() {
             strokeOpacity = strokeOpacity,
             strokeDashArray = strokeDashArray,
             strokeDashOffset = strokeDashOffset,
-            strokeMiter = strokeMiter
+            strokeMiter = strokeMiter,
+            strokeLineCap = strokeLineCap
         )
     }
 
@@ -47,6 +50,7 @@ internal abstract class Figure : Node() {
         val StrokeDashArrayAttrSpec = CLASS.registerVariableAttr(Figure::strokeDashArray)
         val StrokeDashOffsetAttrSpec = CLASS.registerVariableAttr(Figure::strokeDashOffset)
         val StrokeMiterAttrSpec = CLASS.registerVariableAttr(Figure::strokeMiter)
+        val StrokeLineCapAttrSpec = CLASS.registerVariableAttr(Figure::strokeLineCap)
         val FillAttrSpec = CLASS.registerVariableAttr(Figure::fill)
         val FillOpacityAttrSpec = CLASS.registerVariableAttr(Figure::fillOpacity)
 
@@ -57,7 +61,8 @@ internal abstract class Figure : Node() {
                 StrokeWidthAttrSpec,
                 StrokeDashArrayAttrSpec,
                 StrokeOpacityAttrSpec,
-                StrokeMiterAttrSpec
+                StrokeMiterAttrSpec,
+                StrokeLineCapAttrSpec
             )
         )
 
@@ -72,7 +77,8 @@ internal abstract class Figure : Node() {
             strokeOpacity: Float = 1f,
             strokeDashArray: List<Double> = emptyList(),
             strokeDashOffset: Float = 0f, // not mandatory, default works fine
-            strokeMiter: Float? = null
+            strokeMiter: Float? = null,
+            strokeLineCap: LineCap = LineCap.BUTT
         ): Paint? {
             if (stroke == null) return null
             if (strokeOpacity == 0f) return null
@@ -88,6 +94,7 @@ internal abstract class Figure : Node() {
             paint.color = stroke.changeAlpha(strokeOpacity)
             paint.strokeWidth = strokeWidth
             strokeMiter?.let { paint.strokeMiter = it }
+            paint.strokeLineCap = strokeLineCap
             strokeDashArray.let { paint.strokeDashList = it.toDoubleArray() }
             strokeDashOffset.let { paint.strokeDashOffset = it }
             return paint
@@ -109,6 +116,7 @@ internal abstract class Figure : Node() {
                 ctx.setLineWidth(paint.strokeWidth.toDouble())
                 ctx.setStrokeStyle(paint.color)
                 ctx.setStrokeMiterLimit(paint.strokeMiter.toDouble())
+                ctx.setLineCap(paint.strokeLineCap)
                 ctx.setLineDash(paint.strokeDashList)
 
             } else {
@@ -122,6 +130,7 @@ internal abstract class Figure : Node() {
             setLineWidth(paint.strokeWidth.toDouble())
             setStrokeStyle(paint.color)
             setStrokeMiterLimit(paint.strokeMiter.toDouble())
+            setLineCap(paint.strokeLineCap)
             setLineDash(paint.strokeDashList)
 
             stroke()

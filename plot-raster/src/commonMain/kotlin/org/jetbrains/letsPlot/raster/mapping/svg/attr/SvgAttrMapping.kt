@@ -7,6 +7,7 @@ package org.jetbrains.letsPlot.raster.mapping.svg.attr
 
 import org.jetbrains.letsPlot.commons.geometry.AffineTransform
 import org.jetbrains.letsPlot.commons.geometry.DoubleRectangle
+import org.jetbrains.letsPlot.core.canvas.LineCap
 import org.jetbrains.letsPlot.core.canvas.Path2d
 import org.jetbrains.letsPlot.datamodel.svg.dom.*
 import org.jetbrains.letsPlot.datamodel.svg.dom.SvgGraphicsElement.PointerEvents
@@ -103,6 +104,17 @@ internal abstract class SvgAttrMapping<in TargetT : Node> {
                 ?.split(",")
                 ?.map(String::trim)
                 ?: emptyList()
+
+        val Any.asLineCap: LineCap
+            get() = when (this) {
+                SvgShape.StrokeLineCap.BUTT,
+                SvgShape.StrokeLineCap.BUTT.toString() -> LineCap.BUTT
+                SvgShape.StrokeLineCap.ROUND,
+                SvgShape.StrokeLineCap.ROUND.toString() -> LineCap.ROUND
+                SvgShape.StrokeLineCap.SQUARE,
+                SvgShape.StrokeLineCap.SQUARE.toString() -> LineCap.SQUARE
+                else -> throw IllegalArgumentException("Unknown stroke-linecap: $this")
+            }
 
         fun splitStyle(style: String?): List<Pair<String, String>> {
             if (style.isNullOrBlank()) {

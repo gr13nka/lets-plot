@@ -12,6 +12,7 @@ import org.jetbrains.letsPlot.commons.values.Color
 import org.jetbrains.letsPlot.core.canvas.Context2d
 import org.jetbrains.letsPlot.core.canvas.FontStyle
 import org.jetbrains.letsPlot.core.canvas.FontWeight
+import org.jetbrains.letsPlot.core.canvas.LineCap
 
 internal class Text : Container() {
     var x: Float by variableAttr(0f)
@@ -24,6 +25,7 @@ internal class Text : Container() {
     var strokeOpacity: Float by variableAttr(1f)
     var strokeDashArray: List<Float>? by variableAttr(null)
     var strokeMiter: Float? by variableAttr(null)
+    var strokeLineCap: LineCap by variableAttr(LineCap.BUTT)
 
     var fill: Color? by variableAttr(Color.BLACK)
     var fillOpacity: Float by variableAttr(1f)
@@ -101,6 +103,7 @@ internal class Text : Container() {
                 StrokeWidthAttrSpec -> tSpan.inheritValue(Figure.StrokeWidthAttrSpec, strokeWidth)
                 StrokeDashArrayAttrSpec -> tSpan.inheritValue(Figure.StrokeDashArrayAttrSpec, strokeDashArray)
                 StrokeOpacityAttrSpec -> tSpan.inheritValue(Figure.StrokeOpacityAttrSpec, strokeOpacity)
+                StrokeLineCapAttrSpec -> tSpan.inheritValue(Figure.StrokeLineCapAttrSpec, strokeLineCap)
 
                 FontFamilyAttrSpec -> tSpan.inheritValue(TSpan.FontFamilyAttrSpec, fontFamily)
                 FontSizeAttrSpec -> tSpan.inheritValue(TSpan.FontSizeAttrSpec, fontSize)
@@ -119,6 +122,7 @@ internal class Text : Container() {
         tSpan.inheritValue(Figure.StrokeWidthAttrSpec, strokeWidth)
         tSpan.inheritValue(Figure.StrokeOpacityAttrSpec, strokeOpacity)
         tSpan.inheritValue(Figure.StrokeDashArrayAttrSpec, strokeDashArray)
+        tSpan.inheritValue(Figure.StrokeLineCapAttrSpec, strokeLineCap)
         tSpan.inheritValue(TSpan.FontFamilyAttrSpec, fontFamily)
         tSpan.inheritValue(TSpan.FontStyleAttrSpec, fontStyle)
         tSpan.inheritValue(TSpan.FontWeightAttrSpec, fontWeight)
@@ -170,6 +174,7 @@ internal class Text : Container() {
         val StrokeOpacityAttrSpec = CLASS.registerVariableAttr(Text::strokeOpacity)
         val StrokeDashArrayAttrSpec = CLASS.registerVariableAttr(Text::strokeDashArray)
         val StrokeMiterAttrSpec = CLASS.registerVariableAttr(Text::strokeMiter)
+        val StrokeLineCapAttrSpec = CLASS.registerVariableAttr(Text::strokeLineCap)
 
         val FontFamilyAttrSpec = CLASS.registerVariableAttr(Text::fontFamily)
         val FontStyleAttrSpec = CLASS.registerVariableAttr(Text::fontStyle)

@@ -20,6 +20,7 @@ import org.jetbrains.letsPlot.datamodel.svg.dom.SvgColors
 import org.jetbrains.letsPlot.datamodel.svg.dom.SvgGElement
 import org.jetbrains.letsPlot.datamodel.svg.dom.SvgPathDataBuilder
 import org.jetbrains.letsPlot.datamodel.svg.dom.SvgPathElement
+import org.jetbrains.letsPlot.datamodel.svg.dom.SvgShape
 
 class SmileyGeom : GeomBase() {
     override val geomName: String = "smiley"
@@ -44,11 +45,7 @@ class SmileyGeom : GeomBase() {
         for (p in aesthetics.dataPoints()) {
             val location = p.toLocation(Aes.X, Aes.Y) ?: continue
             val client = helper.toClient(location, p) ?: continue
-            val sizeScale = if (sizeUnit.isNullOrBlank()) {
-                ctx.getScaleFactor()
-            } else {
-                AesScaling.sizeUnitRatio(location, coord, sizeUnit, AesScaling.POINT_UNIT_SIZE)
-            }
+            val sizeScale = AesScaling.sizeUnitRatio(location, coord, sizeUnit, AesScaling.POINT_UNIT_SIZE)
             val faceRadius = AesScaling.circleDiameter(p) * sizeScale / 2.0
             val happiness = effectiveHappiness(p)
 
@@ -67,7 +64,7 @@ class SmileyGeom : GeomBase() {
     }
 
     private fun effectiveHappiness(point: DataPointAesthetics): Double {
-        return (point.finiteOrNull(Aes.HAPPINESS) ?: happiness).coerceIn(-1.0, 1.0)
+        return (point.happiness() ?: happiness).coerceIn(-1.0, 1.0)
     }
 
     private fun createFace(
@@ -114,7 +111,7 @@ class SmileyGeom : GeomBase() {
         cy: Double,
         r: Double,
         happiness: Double
-    ): SvgGElement {
+    ): SvgPathElement {
         val mouthLeft = DoubleVector(cx - 0.4 * r, cy + 0.3 * r)
         val mouthRight = DoubleVector(cx + 0.4 * r, cy + 0.3 * r)
         val qcp = DoubleVector(cx, cy + 0.3 * r + happiness * 0.4 * r)
@@ -136,22 +133,8 @@ class SmileyGeom : GeomBase() {
         mouth.strokeColor().set(point.color())
         mouth.strokeWidth().set(strokeWidth)
         mouth.fill().set(SvgColors.NONE)
-
-        val endRadius = strokeWidth / 2.0
-        val leftCap = SvgCircleElement(mouthLeft.x, mouthLeft.y, endRadius).apply {
-            fillColor().set(point.color())
-            strokeWidth().set(0.0)
-        }
-        val rightCap = SvgCircleElement(mouthRight.x, mouthRight.y, endRadius).apply {
-            fillColor().set(point.color())
-            strokeWidth().set(0.0)
-        }
-
-        return SvgGElement().apply {
-            children().add(mouth)
-            children().add(leftCap)
-            children().add(rightCap)
-        }
+        mouth.setAttribute(SvgShape.STROKE_LINECAP, SvgShape.StrokeLineCap.ROUND)
+        return mouth
     }
 
     private fun effectiveLineWidth(point: DataPointAesthetics): Double {

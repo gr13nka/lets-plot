@@ -84,6 +84,10 @@ internal class DataPointLiveMapAesthetics {
     var isCurve: Boolean = false
 
     private var myPlotArrowSpec: ArrowSpec? = null
+    private var myPointShape: Int? = null
+    private var myPointRadius: Double? = null
+    private var myPointStrokeWidth: Double? = null
+    private var mySmileyHappiness: Double? = null
     val arrowSpec: LiveMapArrowSpec? get() {
         return myPlotArrowSpec?.let {
             LiveMapArrowSpec(
@@ -107,11 +111,12 @@ internal class DataPointLiveMapAesthetics {
     val speed get() = myP.speed()!!
     val family get() = myP.family()
     val angle get() = myP.angle()!!
-    val shape get() = myP.shape()!!.code
+    val shape get() = myPointShape ?: myP.shape()!!.code
     val size get() = AestheticsUtil.textSize(myP)
     val fillColor get() = colorWithAlpha(myP.fill()!!)
     val label get() = myP.label()?.toString() ?: "n/a"
     val lineheight get() = myP.lineheight()!!
+    val smileyHappiness get() = mySmileyHappiness
 
     val hjust
         get() = when (TextUtil.hAnchor(myP.hjust())) {
@@ -186,7 +191,7 @@ internal class DataPointLiveMapAesthetics {
 
     val radius: Double
         get() = when (myLayerKind) {
-            POINT -> pointRadius(myP.shape()!!.size(myP))
+            POINT -> myPointRadius ?: pointRadius(myP.shape()!!.size(myP))
             PIE -> AestheticsUtil.pieDiameter(myP) / 2.0
             else -> 0.0
         }
@@ -194,7 +199,7 @@ internal class DataPointLiveMapAesthetics {
     val strokeWidth
         get() = when (myLayerKind) {
             POLYGON, PATH, H_LINE, V_LINE -> AestheticsUtil.strokeWidth(myP)
-            POINT -> AestheticsUtil.pointStrokeWidth(myP)
+            POINT -> myPointStrokeWidth ?: AestheticsUtil.pointStrokeWidth(myP)
             TEXT -> 0.0
             PIE -> myP.stroke() ?: 0.0
         }
@@ -253,10 +258,30 @@ internal class DataPointLiveMapAesthetics {
         return this
     }
 
+    fun setPointShape(shape: Int): DataPointLiveMapAesthetics {
+        myPointShape = shape
+        return this
+    }
+
+    fun setPointRadius(radius: Double): DataPointLiveMapAesthetics {
+        myPointRadius = radius
+        return this
+    }
+
+    fun setPointStrokeWidth(strokeWidth: Double): DataPointLiveMapAesthetics {
+        myPointStrokeWidth = strokeWidth
+        return this
+    }
+
     fun setAnimation(animation: Int?): DataPointLiveMapAesthetics {
         if (animation != null) {
             this.animation = animation
         }
+        return this
+    }
+
+    fun setSmileyHappiness(happiness: Double): DataPointLiveMapAesthetics {
+        mySmileyHappiness = happiness
         return this
     }
 

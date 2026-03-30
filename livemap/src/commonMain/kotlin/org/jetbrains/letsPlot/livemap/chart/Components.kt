@@ -84,6 +84,8 @@ class PointComponent : EcsComponent {
     fun scaledRadius(scalingSizeFactor: Double) = size * scalingSizeFactor / 2.0
 }
 
+class SmileyComponent(val happiness: Double) : EcsComponent
+
 class PieSpecComponent : EcsComponent {
     var radius: Double = 0.0
     var holeSize: Double = 0.0

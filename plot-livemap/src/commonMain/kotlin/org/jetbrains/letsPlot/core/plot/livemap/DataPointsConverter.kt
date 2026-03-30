@@ -16,6 +16,8 @@ import org.jetbrains.letsPlot.core.plot.base.Aes
 import org.jetbrains.letsPlot.core.plot.base.Aesthetics
 import org.jetbrains.letsPlot.core.plot.base.DataPointAesthetics
 import org.jetbrains.letsPlot.core.plot.base.Geom
+import org.jetbrains.letsPlot.core.plot.base.aes.AesScaling
+import org.jetbrains.letsPlot.core.plot.base.aes.AestheticsUtil
 import org.jetbrains.letsPlot.core.plot.base.geom.*
 import org.jetbrains.letsPlot.core.plot.base.geom.util.*
 import org.jetbrains.letsPlot.core.plot.base.geom.util.GeomUtil.TO_LOCATION_X_Y
@@ -24,6 +26,7 @@ import org.jetbrains.letsPlot.core.plot.base.geom.util.GeomUtil.createPaths
 import org.jetbrains.letsPlot.core.plot.base.geom.util.GeomUtil.toLocation
 import org.jetbrains.letsPlot.core.plot.base.geom.util.LinesHelper.Companion.midPointsPathInterpolator
 import org.jetbrains.letsPlot.core.plot.base.geom.util.LinesHelper.Companion.splitByStyle
+import org.jetbrains.letsPlot.core.plot.base.render.point.NamedShape
 import org.jetbrains.letsPlot.core.plot.builder.scale.DefaultNaValue
 import org.jetbrains.letsPlot.livemap.Client
 import org.jetbrains.letsPlot.livemap.Client.Companion.px
@@ -72,6 +75,7 @@ internal class DataPointsConverter(
     }
 
     fun toPoint(geom: PointGeom) = pointFeatureConverter.point(geom)
+    fun toSmiley(geom: SmileyGeom, mappedHappiness: Boolean) = pointFeatureConverter.smiley(geom, mappedHappiness)
     fun toHorizontalLine() = pointFeatureConverter.hLine()
     fun toVerticalLine() = pointFeatureConverter.vLine()
     fun toSegment(geom: SegmentGeom) = mySinglePathFeatureConverter.segment(geom)
@@ -328,6 +332,26 @@ internal class DataPointsConverter(
             return process(MapLayerKind.POINT) { explicitVec(it.x()!!, it.y()!!) }
         }
 
+        fun smiley(geom: SmileyGeom, mappedHappiness: Boolean): List<DataPointLiveMapAesthetics> {
+            return process(
+                MapLayerKind.POINT,
+                configure = { p, dataPointLiveMapAesthetics ->
+                    val strokeWidth = AesScaling.lineWidth(p) / 2.5
+                    val faceRadius = AestheticsUtil.circleDiameter(p) / 2.0
+                    val happiness = when (mappedHappiness) {
+                        true -> p.finiteOrNull(Aes.HAPPINESS) ?: geom.happiness
+                        false -> geom.happiness
+                    }.coerceIn(-1.0, 1.0)
+
+                    dataPointLiveMapAesthetics
+                        .setPointShape(NamedShape.FILLED_CIRCLE.code)
+                        .setPointRadius(faceRadius + strokeWidth / 2.0)
+                        .setPointStrokeWidth(strokeWidth)
+                        .setSmileyHappiness(happiness)
+                }
+            ) { explicitVec(it.x()!!, it.y()!!) }
+        }
+
         fun hLine(): List<DataPointLiveMapAesthetics> {
             return process(MapLayerKind.H_LINE) {
                 if (SeriesUtil.isFinite(it.interceptY())) {
@@ -359,6 +383,7 @@ internal class DataPointsConverter(
 
         private fun process(
             layerKind: MapLayerKind,
+            configure: (DataPointAesthetics, DataPointLiveMapAesthetics) -> Unit = { _, _ -> },
             dataPointToGeometry: (DataPointAesthetics) -> Vec<LonLat>?
         ): List<DataPointLiveMapAesthetics> {
             val mapObjects = ArrayList<DataPointLiveMapAesthetics>(myAesthetics.dataPointCount())
@@ -368,6 +393,7 @@ internal class DataPointsConverter(
                         point = v
                         setAnimation(myAnimation)
                         setLabelOptions(myLabelOptions)
+                        configure(p, this)
                     }
                 }?.let(mapObjects::add)
             }
