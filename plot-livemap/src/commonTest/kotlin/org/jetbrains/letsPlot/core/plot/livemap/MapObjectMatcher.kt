@@ -49,7 +49,7 @@ internal class MapObjectMatcher {
             // HEATMAP -> matchHeatmap(mapObject)
             V_LINE, H_LINE -> matchLine(mapEntity)
             PATH -> matchPath(mapEntity)
-            POINT -> matchPoint(mapEntity)
+            POINT, SMILEY -> matchPoint(mapEntity)
             POLYGON -> matchPolygon(mapEntity)
             TEXT -> matchText(mapEntity)
         }

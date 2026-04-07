@@ -41,10 +41,7 @@ object LayerConverter {
 
             val (layerKind, dataPointLiveMapAesthetics) = when (layer.geomKind) {
                 POINT -> MapLayerKind.POINT to dataPointsConverter.toPoint(layer.geom as PointGeom)
-                SMILEY -> MapLayerKind.POINT to dataPointsConverter.toSmiley(
-                    layer.geom as SmileyGeom,
-                    mappedHappiness = Aes.HAPPINESS in layer.mappedAes
-                )
+                SMILEY -> MapLayerKind.SMILEY to dataPointsConverter.toSmiley()
                 H_LINE -> MapLayerKind.H_LINE to dataPointsConverter.toHorizontalLine()
                 V_LINE -> MapLayerKind.V_LINE to dataPointsConverter.toVerticalLine()
                 SEGMENT -> MapLayerKind.PATH to dataPointsConverter.toSegment(layer.geom as SegmentGeom)
@@ -108,8 +105,7 @@ object LayerConverter {
                         shape = it.shape
                         angle = it.angle
                         radius = it.radius
-                        smileyHappiness = it.smileyHappiness
-                        fillColor = it.fillColor
+                            fillColor = it.fillColor
                         strokeColor = it.strokeColor
                         strokeWidth = it.strokeWidth
                     }
@@ -252,6 +248,23 @@ object LayerConverter {
                         spacerWidth = it.spacerWidth
                         startAngle = it.startAngle
                         clockwise = it.clockwise
+                    }
+                }
+            }
+
+            MapLayerKind.SMILEY -> smileys {
+                liveMapDataPoints.forEach {
+                    smiley {
+                        this.sizeScalingRange = sizeScalingRange
+                        this.alphaScalingEnabled = alphaScalingEnabled
+                        layerIndex = layerIdx
+                        index = it.index
+                        point = it.point
+                        radius = it.radius
+                        happiness = it.smileyHappiness!!
+                        fillColor = it.fillColor
+                        strokeColor = it.strokeColor
+                        strokeWidth = it.strokeWidth
                     }
                 }
             }

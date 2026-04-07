@@ -8,6 +8,7 @@ package org.jetbrains.letsPlot.core.plot.base.geom
 import org.jetbrains.letsPlot.commons.geometry.DoubleVector
 import org.jetbrains.letsPlot.commons.values.Color
 import org.jetbrains.letsPlot.core.plot.base.*
+import org.jetbrains.letsPlot.core.plot.base.aes.AesInitValue
 import org.jetbrains.letsPlot.core.plot.base.aes.AesScaling
 import org.jetbrains.letsPlot.core.plot.base.geom.util.GeomHelper
 import org.jetbrains.letsPlot.core.plot.base.geom.util.GeomUtil.toLocation
@@ -24,7 +25,6 @@ import org.jetbrains.letsPlot.datamodel.svg.dom.SvgShape
 
 class SmileyGeom : GeomBase() {
     override val geomName: String = "smiley"
-    var happiness: Double = DEF_HAPPINESS
     var sizeUnit: String? = null
 
     override val legendKeyElementFactory: LegendKeyElementFactory
@@ -64,7 +64,7 @@ class SmileyGeom : GeomBase() {
     }
 
     private fun effectiveHappiness(point: DataPointAesthetics): Double {
-        return (point.happiness() ?: happiness).coerceIn(-1.0, 1.0)
+        return (point.happiness() ?: AesInitValue[Aes.HAPPINESS]).coerceIn(-1.0, 1.0)
     }
 
     private fun createFace(
@@ -165,7 +165,6 @@ class SmileyGeom : GeomBase() {
     }
 
     companion object {
-        const val DEF_HAPPINESS = 0.5
         const val HANDLES_GROUPS = PointGeom.HANDLES_GROUPS
     }
 }

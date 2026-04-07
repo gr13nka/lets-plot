@@ -7,7 +7,6 @@ package org.jetbrains.letsPlot.core.plot.livemap
 
 import org.jetbrains.letsPlot.core.plot.base.aes.AestheticsBuilder.Companion.constant
 import org.jetbrains.letsPlot.core.plot.base.aes.AestheticsBuilder.Companion.list
-import org.jetbrains.letsPlot.core.plot.base.geom.SmileyGeom
 import org.jetbrains.letsPlot.core.plot.base.render.point.NamedShape
 import org.jetbrains.letsPlot.core.plot.livemap.ConverterDataHelper.AestheticsDataHelper
 import org.jetbrains.letsPlot.core.plot.livemap.ConverterDataHelper.GENERIC_POINTS
@@ -36,20 +35,17 @@ class SmileyConverterTest {
             .strokeWidth(eq(1.76))
             .point(eq(GENERIC_POINTS[0]))
 
-        val mapObjectList = aesData.buildConverter().toSmiley(SmileyGeom(), mappedHappiness = false)
+        val mapObjectList = aesData.buildConverter().toSmiley()
         assertEquals(2, mapObjectList.size)
         matcher.match(mapObjectList[0])
         assertEquals(0.5, mapObjectList[0].smileyHappiness)
     }
 
     @Test
-    fun mappedHappinessShouldOverrideGeomParameterAndBeClamped() {
+    fun mappedHappinessShouldBeReadFromAestheticAndClamped() {
         aesData.builder().happiness(list(listOf(2.0, -0.25)))
 
-        val mapObjectList = aesData.buildConverter().toSmiley(
-            SmileyGeom().apply { happiness = -0.5 },
-            mappedHappiness = true
-        )
+        val mapObjectList = aesData.buildConverter().toSmiley()
 
         assertEquals(2, mapObjectList.size)
         assertEquals(1.0, mapObjectList[0].smileyHappiness)
@@ -57,11 +53,10 @@ class SmileyConverterTest {
     }
 
     @Test
-    fun geomHappinessShouldBeFallbackAndClamped() {
-        val mapObjectList = aesData.buildConverter().toSmiley(
-            SmileyGeom().apply { happiness = -2.0 },
-            mappedHappiness = false
-        )
+    fun constantHappinessShouldBeReadFromAestheticAndClamped() {
+        aesData.builder().happiness(constant(-2.0))
+
+        val mapObjectList = aesData.buildConverter().toSmiley()
 
         assertEquals(2, mapObjectList.size)
         assertEquals(-1.0, mapObjectList[0].smileyHappiness)

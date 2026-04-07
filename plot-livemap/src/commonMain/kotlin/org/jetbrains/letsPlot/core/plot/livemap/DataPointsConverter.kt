@@ -16,6 +16,7 @@ import org.jetbrains.letsPlot.core.plot.base.Aes
 import org.jetbrains.letsPlot.core.plot.base.Aesthetics
 import org.jetbrains.letsPlot.core.plot.base.DataPointAesthetics
 import org.jetbrains.letsPlot.core.plot.base.Geom
+import org.jetbrains.letsPlot.core.plot.base.aes.AesInitValue
 import org.jetbrains.letsPlot.core.plot.base.aes.AesScaling
 import org.jetbrains.letsPlot.core.plot.base.aes.AestheticsUtil
 import org.jetbrains.letsPlot.core.plot.base.geom.*
@@ -75,7 +76,7 @@ internal class DataPointsConverter(
     }
 
     fun toPoint(geom: PointGeom) = pointFeatureConverter.point(geom)
-    fun toSmiley(geom: SmileyGeom, mappedHappiness: Boolean) = pointFeatureConverter.smiley(geom, mappedHappiness)
+    fun toSmiley() = pointFeatureConverter.smiley()
     fun toHorizontalLine() = pointFeatureConverter.hLine()
     fun toVerticalLine() = pointFeatureConverter.vLine()
     fun toSegment(geom: SegmentGeom) = mySinglePathFeatureConverter.segment(geom)
@@ -332,16 +333,14 @@ internal class DataPointsConverter(
             return process(MapLayerKind.POINT) { explicitVec(it.x()!!, it.y()!!) }
         }
 
-        fun smiley(geom: SmileyGeom, mappedHappiness: Boolean): List<DataPointLiveMapAesthetics> {
+        fun smiley(): List<DataPointLiveMapAesthetics> {
             return process(
                 MapLayerKind.POINT,
                 configure = { p, dataPointLiveMapAesthetics ->
                     val strokeWidth = AesScaling.lineWidth(p) / 2.5
                     val faceRadius = AestheticsUtil.circleDiameter(p) / 2.0
-                    val happiness = when (mappedHappiness) {
-                        true -> p.finiteOrNull(Aes.HAPPINESS) ?: geom.happiness
-                        false -> geom.happiness
-                    }.coerceIn(-1.0, 1.0)
+                    val happiness = (p.finiteOrNull(Aes.HAPPINESS) ?: AesInitValue[Aes.HAPPINESS])
+                        .coerceIn(-1.0, 1.0)
 
                     dataPointLiveMapAesthetics
                         .setPointShape(NamedShape.FILLED_CIRCLE.code)

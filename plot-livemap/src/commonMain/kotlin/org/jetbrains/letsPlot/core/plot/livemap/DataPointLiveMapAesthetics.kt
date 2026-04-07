@@ -199,7 +199,7 @@ internal class DataPointLiveMapAesthetics {
     val strokeWidth
         get() = when (myLayerKind) {
             POLYGON, PATH, H_LINE, V_LINE -> AestheticsUtil.strokeWidth(myP)
-            POINT -> myPointStrokeWidth ?: AestheticsUtil.pointStrokeWidth(myP)
+            POINT, SMILEY -> myPointStrokeWidth ?: AestheticsUtil.pointStrokeWidth(myP)
             TEXT -> 0.0
             PIE -> myP.stroke() ?: 0.0
         }

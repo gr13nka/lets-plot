@@ -3,7 +3,7 @@
  * Use of this source code is governed by the MIT license that can be found in the LICENSE file.
  */
 
-package org.jetbrains.letsPlot.livemap.chart.point
+package org.jetbrains.letsPlot.livemap.chart.smiley
 
 import org.jetbrains.letsPlot.commons.intern.typedGeometry.Vec
 import org.jetbrains.letsPlot.commons.values.Color
@@ -26,11 +26,7 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
-class PointRendererSmileyTest {
-    companion object {
-        private const val FILLED_CIRCLE_SHAPE_CODE = 21
-    }
-
+class SmileyRendererTest {
     private val viewport = Viewport(
         ViewportHelper(org.jetbrains.letsPlot.livemap.World.DOMAIN, true, myLoopY = false),
         org.jetbrains.letsPlot.livemap.ClientPoint(256, 256),
@@ -44,7 +40,7 @@ class PointRendererSmileyTest {
     fun smileyRendererShouldDrawFaceEyesAndMouth() {
         val context = RecordingContext2d()
 
-        PointRenderer(FILLED_CIRCLE_SHAPE_CODE, 0.0).render(
+        SmileyRenderer().render(
             entity(happiness = 1.0),
             context,
             renderHelper
@@ -74,7 +70,7 @@ class PointRendererSmileyTest {
     fun smileyRendererShouldResetLineCapAfterDrawing() {
         val context = RecordingContext2d()
 
-        PointRenderer(FILLED_CIRCLE_SHAPE_CODE, 0.0).render(
+        SmileyRenderer().render(
             entity(happiness = 0.5),
             context,
             renderHelper
@@ -87,7 +83,7 @@ class PointRendererSmileyTest {
     fun smileyRendererShouldChangeMouthWithHappiness() {
         val happyContext = RecordingContext2d()
         val sadContext = RecordingContext2d()
-        val renderer = PointRenderer(FILLED_CIRCLE_SHAPE_CODE, 0.0)
+        val renderer = SmileyRenderer()
 
         renderer.render(entity(happiness = 1.0), happyContext, renderHelper)
         renderer.render(entity(happiness = -1.0), sadContext, renderHelper)

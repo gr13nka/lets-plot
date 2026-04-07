@@ -474,7 +474,6 @@ object Option {
         }
 
         object Smiley {
-            const val HAPPINESS = "happiness"
             const val SIZE_UNIT = "size_unit"
         }
 
