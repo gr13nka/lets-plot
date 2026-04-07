@@ -16,7 +16,6 @@ import org.jetbrains.letsPlot.core.plot.base.Aes
 import org.jetbrains.letsPlot.core.plot.base.Aesthetics
 import org.jetbrains.letsPlot.core.plot.base.DataPointAesthetics
 import org.jetbrains.letsPlot.core.plot.base.Geom
-import org.jetbrains.letsPlot.core.plot.base.aes.AesInitValue
 import org.jetbrains.letsPlot.core.plot.base.aes.AesScaling
 import org.jetbrains.letsPlot.core.plot.base.aes.AestheticsUtil
 import org.jetbrains.letsPlot.core.plot.base.geom.*
@@ -339,7 +338,7 @@ internal class DataPointsConverter(
                 configure = { p, dataPointLiveMapAesthetics ->
                     val strokeWidth = AesScaling.lineWidth(p) / 2.5
                     val faceRadius = AestheticsUtil.circleDiameter(p) / 2.0
-                    val happiness = (p.finiteOrNull(Aes.HAPPINESS) ?: AesInitValue[Aes.HAPPINESS])
+                    val happiness = p.happiness()!!
                         .coerceIn(-1.0, 1.0)
 
                     dataPointLiveMapAesthetics
