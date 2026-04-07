@@ -6,9 +6,7 @@
 package org.jetbrains.letsPlot.core.plot.base.geom
 
 import org.jetbrains.letsPlot.commons.geometry.DoubleVector
-import org.jetbrains.letsPlot.commons.values.Color
 import org.jetbrains.letsPlot.core.plot.base.*
-import org.jetbrains.letsPlot.core.plot.base.aes.AesInitValue
 import org.jetbrains.letsPlot.core.plot.base.aes.AesScaling
 import org.jetbrains.letsPlot.core.plot.base.geom.util.GeomHelper
 import org.jetbrains.letsPlot.core.plot.base.geom.util.GeomUtil.toLocation
@@ -64,7 +62,7 @@ class SmileyGeom : GeomBase() {
     }
 
     private fun effectiveHappiness(point: DataPointAesthetics): Double {
-        return (point.happiness() ?: AesInitValue[Aes.HAPPINESS]).coerceIn(-1.0, 1.0)
+        return point.happiness()!!.coerceIn(-1.0, 1.0)
     }
 
     private fun createFace(
@@ -100,7 +98,7 @@ class SmileyGeom : GeomBase() {
         faceRadius: Double
     ): SvgCircleElement {
         val eye = SvgCircleElement(ex, ey, eyeRadius(point, faceRadius))
-        eye.fillColor().set(point.color() ?: Color.BLACK)
+        eye.fillColor().set(point.color()!!)
         eye.strokeWidth().set(0.0)
         return eye
     }
@@ -130,7 +128,7 @@ class SmileyGeom : GeomBase() {
 
         val strokeWidth = effectiveLineWidth(point)
         val mouth = SvgPathElement(pathData)
-        mouth.strokeColor().set(point.color())
+        mouth.strokeColor().set(point.color()!!)
         mouth.strokeWidth().set(strokeWidth)
         mouth.fill().set(SvgColors.NONE)
         mouth.setAttribute(SvgShape.STROKE_LINECAP, SvgShape.StrokeLineCap.ROUND)
