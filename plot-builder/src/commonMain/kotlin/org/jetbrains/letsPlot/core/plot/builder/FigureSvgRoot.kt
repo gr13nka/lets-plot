@@ -15,6 +15,8 @@ abstract class FigureSvgRoot(
 ) {
     val svg: SvgSvgElement = SvgSvgElement()
 
+    var svgPostProcessor: ((SvgSvgElement) -> Unit)? = null
+
     private var isContentBuilt: Boolean = false
 
     init {
@@ -32,6 +34,7 @@ abstract class FigureSvgRoot(
         check(!isContentBuilt)
         isContentBuilt = true
         buildFigureContent()
+        svgPostProcessor?.invoke(svg)
     }
 
     fun clearContent() {

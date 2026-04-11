@@ -7,10 +7,12 @@ package org.jetbrains.letsPlot.core.plot.builder.buildinfo
 
 import org.jetbrains.letsPlot.commons.geometry.DoubleRectangle
 import org.jetbrains.letsPlot.commons.geometry.DoubleVector
+import org.jetbrains.letsPlot.commons.intern.comic.ComicConfig
 import org.jetbrains.letsPlot.core.plot.builder.GeomLayer
 import org.jetbrains.letsPlot.core.plot.builder.PlotSvgRoot
 import org.jetbrains.letsPlot.core.plot.builder.assemble.PlotAssembler
 import org.jetbrains.letsPlot.core.plot.builder.layout.figure.plot.PlotFigureLayoutInfo
+import org.jetbrains.letsPlot.datamodel.svg.dom.comic.SvgComicTransformer
 
 class PlotFigureBuildInfo constructor(
     private val plotAssembler: PlotAssembler,
@@ -42,11 +44,15 @@ class PlotFigureBuildInfo constructor(
     override fun createSvgRoot(): PlotSvgRoot {
         check(this::_layoutInfo.isInitialized) { "Plot figure is not layouted." }
         val plotSvgComponent = plotAssembler.createPlot(_layoutInfo)
-        return PlotSvgRoot(
+        val plotSvgRoot = PlotSvgRoot(
             plotSvgComponent,
             liveMapCursorServiceConfig = if (containsLiveMap) liveMapCursorServiceConfig else null,
-            bounds.origin
+            bounds.origin,
         )
+        ComicConfig.fromSpec(processedPlotSpec)?.let { config ->
+            plotSvgRoot.svgPostProcessor = { svg -> SvgComicTransformer.transform(svg, config) }
+        }
+        return plotSvgRoot
     }
 
     override fun withBounds(bounds: DoubleRectangle): PlotFigureBuildInfo {
@@ -100,7 +106,7 @@ class PlotFigureBuildInfo constructor(
             plotAssembler,
             processedPlotSpec,
             DoubleRectangle(DoubleVector.Companion.ZERO, size),
-            computationMessages
+            computationMessages,
         )
     }
 }

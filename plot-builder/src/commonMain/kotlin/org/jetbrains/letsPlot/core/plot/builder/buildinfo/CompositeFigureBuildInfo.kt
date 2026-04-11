@@ -63,7 +63,9 @@ class CompositeFigureBuildInfo constructor(
             theme = theme,
             styleSheet = Style.fromTheme(theme, flippedAxis = false),
         )
-        return CompositeFigureSvgRoot(svgComponent, bounds)
+        val root = CompositeFigureSvgRoot(svgComponent, bounds)
+        root.svgPostProcessor = elementSvgRoots.firstNotNullOfOrNull { it.svgPostProcessor }
+        return root
     }
 
     override fun withBounds(bounds: DoubleRectangle): CompositeFigureBuildInfo {
@@ -120,13 +122,13 @@ class CompositeFigureBuildInfo constructor(
             title, subtitle, caption,
             theme,
             computationMessages,
-            legendBlocks
+            legendBlocks,
         ).apply {
             this._layoutInfo = CompositeFigureLayoutInfo(
                 figureSize = outerBounds.dimension,
                 contentAreaBounds = contentAreaBounds,
                 elementsAreaBounds = layoutedElementsAreaBounds,
-                legendsBlockInfos = legendBlocks
+                legendsBlockInfos = legendBlocks,
             )
         }
     }
@@ -143,7 +145,7 @@ class CompositeFigureBuildInfo constructor(
             title, subtitle, caption,
             theme,
             computationMessages,
-            legendBlocks
+            legendBlocks,
         )
     }
 }

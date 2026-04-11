@@ -85,7 +85,9 @@ class CompositeFigureConfig constructor(
 //                    spec + (GG_TOOLBAR to ggToolbar)
 //                } ?: spec
 
-                val extendedSpec = spec
+                val extendedSpec = opts[Option.Plot.RENDERING_STYLE]?.let { rs ->
+                    spec + (Option.Plot.RENDERING_STYLE to rs)
+                } ?: spec
 
                 when (PlotConfig.figSpecKind(extendedSpec)) {
                     FigKind.PLOT_SPEC -> PlotConfigFrontend.create(

@@ -28,6 +28,7 @@ from .scale_convenience import *
 from .scale_identity_ import *
 from .scale_position import *
 from .stat import *
+from .rendering_style_ import *
 from .theme_ import *
 from .theme_set import *
 from .tooltip import *
@@ -60,5 +61,6 @@ __all__ = (coord.__all__ +
            ggbunch_.__all__ +
            gggrid_.__all__ +
            ggtb_.__all__ +
-           expand_limits_.__all__
+           expand_limits_.__all__ +
+           rendering_style_.__all__
            )
