@@ -8,6 +8,8 @@ package org.jetbrains.letsPlot.awt.plot
 import org.jetbrains.letsPlot.awt.plot.component.SimpleErrorMessageComponent
 import org.jetbrains.letsPlot.commons.geometry.DoubleVector
 import org.jetbrains.letsPlot.commons.logging.PortableLogging
+import org.jetbrains.letsPlot.core.spec.config.ComixStyleConfig
+
 import org.jetbrains.letsPlot.core.spec.FailureHandler
 import org.jetbrains.letsPlot.core.util.MonolithicCommon
 import org.jetbrains.letsPlot.core.util.sizing.SizingPolicy
@@ -79,7 +81,8 @@ object MonolithicAwt {
             val figure = FigureToAwt(
                 success.buildInfo,
                 svgComponentFactory,
-                executor
+                executor,
+                comixStylizer = ComixStyleConfig.stylizerFromPlotSpec(plotSpec)
             ).eval()
 
             computationMessagesHandler(computationMessages)

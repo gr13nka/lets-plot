@@ -191,6 +191,7 @@ object Option {
         const val COORD = "coord"
         const val FACET = "facet"
         const val THEME = "theme"
+        const val COMIX_STYLE = "comix_style"
         const val SIZE = "ggsize"
         const val GUIDES = "guides"
         const val WIDTH = "width"

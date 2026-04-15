@@ -17,6 +17,7 @@ import org.jetbrains.letsPlot.core.plot.builder.GeomLayer
 import org.jetbrains.letsPlot.core.plot.builder.PlotContainer
 import org.jetbrains.letsPlot.core.plot.builder.PlotSvgRoot
 import org.jetbrains.letsPlot.core.plot.builder.buildinfo.FigureBuildInfo
+import org.jetbrains.letsPlot.core.plot.builder.comix.ComixStylizer
 import org.jetbrains.letsPlot.core.plot.builder.interact.CompositeToolEventDispatcher
 import org.jetbrains.letsPlot.core.plot.builder.subPlots.CompositeFigureSvgRoot
 import org.jetbrains.letsPlot.core.plot.livemap.CursorServiceConfig
@@ -37,6 +38,7 @@ internal class FigureToHtml(
     private val buildInfo: FigureBuildInfo,
 //    private val containerElement: HTMLElement,
     private val parentElement: HTMLElement,
+    private val comixStylizer: ComixStylizer? = null,
 ) {
 
 //    private val parentElement: HTMLElement = if (buildInfo.isComposite) {
@@ -79,13 +81,15 @@ internal class FigureToHtml(
                 svgRoot,
                 origin = null,      // The topmost SVG
                 parentElement = parentElement,
+                comixStylizer = comixStylizer,
             )
         } else {
             processPlotFigure(
                 svgRoot = svgRoot as PlotSvgRoot,
                 parentElement = parentElement,
 //                eventArea = buildInfo.bounds
-                eventArea = DoubleRectangle(DoubleVector.ZERO, buildInfo.bounds.dimension)
+                eventArea = DoubleRectangle(DoubleVector.ZERO, buildInfo.bounds.dimension),
+                comixStylizer = comixStylizer,
             )
         }
 
@@ -115,10 +119,11 @@ internal class FigureToHtml(
         private fun processPlotFigure(
             svgRoot: PlotSvgRoot,
             parentElement: HTMLElement,
-            eventArea: DoubleRectangle
+            eventArea: DoubleRectangle,
+            comixStylizer: ComixStylizer?,
         ): Pair<ToolEventDispatcher, Registration> {
 
-            val plotContainer = PlotContainer(svgRoot)
+            val plotContainer = PlotContainer(svgRoot, comixStylizer)
             val (rootSVG, cleanupRegistration) = buildPlotFigureSVG(plotContainer, parentElement, eventArea)
             rootSVG.style.setCursor(CssCursor.CROSSHAIR)
 
@@ -137,8 +142,10 @@ internal class FigureToHtml(
             svgRoot: CompositeFigureSvgRoot,
             origin: DoubleVector?,
             parentElement: HTMLElement,
+            comixStylizer: ComixStylizer?,
         ): Pair<ToolEventDispatcher, Registration> {
             svgRoot.ensureContentBuilt()
+            comixStylizer?.stylize(svgRoot.svg)
 
             val rootSvgSvg: SvgSvgElement = svgRoot.svg
             val domSVGSVG: SVGSVGElement = mapSvgToSVG(rootSvgSvg)
@@ -169,11 +176,12 @@ internal class FigureToHtml(
                     processPlotFigure(
                         svgRoot = figureSvgRoot,
                         parentElement = figureContainer,
-                        eventArea = DoubleRectangle(DoubleVector.ZERO, figureSvgRoot.bounds.dimension)
+                        eventArea = DoubleRectangle(DoubleVector.ZERO, figureSvgRoot.bounds.dimension),
+                        comixStylizer = comixStylizer,
                     )
                 } else {
                     figureSvgRoot as CompositeFigureSvgRoot
-                    processCompositeFigure(figureSvgRoot, elementOrigin, parentElement)
+                    processCompositeFigure(figureSvgRoot, elementOrigin, parentElement, comixStylizer)
                 }
 
                 elementToolEventDispatchers.add(toolEventDispatcher)

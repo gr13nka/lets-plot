@@ -16,6 +16,7 @@ import org.jetbrains.letsPlot.core.plot.builder.GeomLayer
 import org.jetbrains.letsPlot.core.plot.builder.PlotContainer
 import org.jetbrains.letsPlot.core.plot.builder.PlotSvgRoot
 import org.jetbrains.letsPlot.core.plot.builder.buildinfo.FigureBuildInfo
+import org.jetbrains.letsPlot.core.plot.builder.comix.ComixStylizer
 import org.jetbrains.letsPlot.core.plot.builder.interact.CompositeToolEventDispatcher
 import org.jetbrains.letsPlot.core.plot.builder.subPlots.CompositeFigureSvgRoot
 import org.jetbrains.letsPlot.core.plot.livemap.CursorServiceConfig
@@ -29,7 +30,8 @@ import javax.swing.JComponent
 internal class FigureToAwt(
     private val buildInfo: FigureBuildInfo,
     private val svgComponentFactory: (svg: SvgSvgElement) -> JComponent,
-    private val executor: (() -> Unit) -> Unit
+    private val executor: (() -> Unit) -> Unit,
+    private val comixStylizer: ComixStylizer? = null,
 ) {
 
     fun eval(): JComponent {
@@ -55,6 +57,7 @@ internal class FigureToAwt(
     ): JComponent {
 
         svgRoot.ensureContentBuilt()
+        comixStylizer?.stylize(svgRoot.svg)
 
         // JPanel
         val rootJPanel = DisposableJPanel(null)
@@ -135,7 +138,7 @@ internal class FigureToAwt(
     private fun processPlotFigure(
         svgRoot: PlotSvgRoot,
     ): JComponent {
-        val plotContainer = PlotContainer(svgRoot)
+        val plotContainer = PlotContainer(svgRoot, comixStylizer)
         val plotComponent = buildSinglePlotComponent(plotContainer, svgComponentFactory, executor)
 
         return if (svgRoot.isLiveMap) {

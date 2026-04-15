@@ -29,6 +29,7 @@ import org.jetbrains.letsPlot.core.plot.base.tooltip.layout.LayoutManager.Horizo
 import org.jetbrains.letsPlot.core.plot.base.tooltip.layout.LayoutManager.MeasuredTooltip
 import org.jetbrains.letsPlot.core.plot.base.tooltip.loc.LocatedTargetsPicker
 import org.jetbrains.letsPlot.core.plot.base.tooltip.loc.TransformedTargetLocator
+import org.jetbrains.letsPlot.core.plot.builder.comix.ComixStylizer
 import org.jetbrains.letsPlot.core.plot.builder.presentation.Defaults.Common.Tooltip.BORDER_RADIUS
 import org.jetbrains.letsPlot.core.plot.builder.presentation.Defaults.Common.Tooltip.DARK_TEXT_COLOR
 import org.jetbrains.letsPlot.core.plot.builder.presentation.Defaults.Common.Tooltip.LIGHT_TEXT_COLOR
@@ -55,7 +56,8 @@ internal class TooltipRenderer(
     private val plotBackground: Color,
     private val styleSheet: StyleSheet,
     private val plotContext: PlotContext,
-    mouseEventPeer: MouseEventPeer
+    mouseEventPeer: MouseEventPeer,
+    private val comixStylizer: ComixStylizer? = null,
 ) : Disposable {
     private val regs = CompositeRegistration()
     private val myLayoutManager: LayoutManager
@@ -144,6 +146,7 @@ internal class TooltipRenderer(
             .zip(positionedTooltips)
             .forEach { (tooltipComponent, info) ->
                 applySpec(tooltipComponent, info.tooltipSpec)
+                comixStylizer?.stylizeTooltip(tooltipComponent.rootGroup)
                 tooltipComponent.setPosition(
                     info.tooltipCoord,
                     info.stemCoord,

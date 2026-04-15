@@ -14,6 +14,7 @@ import org.jetbrains.letsPlot.core.plot.builder.buildinfo.FigureBuildInfo
 import org.jetbrains.letsPlot.core.plot.builder.buildinfo.PlotFigureBuildInfo
 import org.jetbrains.letsPlot.core.plot.builder.layout.LegendsBlockInfo
 import org.jetbrains.letsPlot.core.plot.builder.layout.figure.composite.CompositeFigureGridLayoutBase
+import org.jetbrains.letsPlot.core.plot.builder.comix.ComixStylizer
 import org.jetbrains.letsPlot.core.spec.FigKind
 import org.jetbrains.letsPlot.core.spec.Option
 import org.jetbrains.letsPlot.core.spec.back.SpecTransformBackendUtil
@@ -21,6 +22,7 @@ import org.jetbrains.letsPlot.core.spec.config.CompositeFigureConfig
 import org.jetbrains.letsPlot.core.spec.config.CompositeFigureConfig.GuidesSharingMode
 import org.jetbrains.letsPlot.core.spec.config.CompositeFigureConfig.GuidesSharingMode.*
 import org.jetbrains.letsPlot.core.spec.config.PlotConfig
+import org.jetbrains.letsPlot.core.spec.config.ComixStyleConfig
 import org.jetbrains.letsPlot.core.spec.front.PlotConfigFrontend
 import org.jetbrains.letsPlot.core.spec.front.PlotConfigFrontendUtil
 import org.jetbrains.letsPlot.core.util.PlotExportCommon.SizeUnit
@@ -69,6 +71,15 @@ object MonolithicCommon {
         val success = buildResult as PlotsBuildResult.Success
 
         val svg: SvgSvgElement = FigureToPlainSvg(success.buildInfo).eval()
+
+        val comixConfig = ComixStyleConfig.fromPlotSpec(plotSpec)
+        if (comixConfig != null) {
+            ComixStylizer(
+                roughness = comixConfig.roughness,
+                hatchingAngle = comixConfig.hatchingAngle,
+                hatchingStrokeWidth = comixConfig.hatchingStrokeWidth,
+            ).stylize(svg)
+        }
 
         val computationMessages = success.buildInfo.computationMessages
         if (computationMessages.isNotEmpty()) {
@@ -356,6 +367,7 @@ object MonolithicCommon {
      * @param plotSpec: raw specifications of a plot
      * @param frontendOnly: if False, apply 'backend' transform as well as `frontend` transform.
      */
+    // чё то обрабатывает в плотконфиг проваливается
     fun processRawSpecs(
         plotSpec: MutableMap<String, Any>,
         frontendOnly: Boolean = false

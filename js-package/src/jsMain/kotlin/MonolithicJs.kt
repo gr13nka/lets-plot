@@ -13,6 +13,7 @@ import org.jetbrains.letsPlot.commons.logging.PortableLogging
 import org.jetbrains.letsPlot.core.FeatureSwitch.PLOT_VIEW_TOOLBOX_HTML
 import org.jetbrains.letsPlot.core.spec.FailureHandler
 import org.jetbrains.letsPlot.core.spec.Option
+import org.jetbrains.letsPlot.core.spec.config.ComixStyleConfig
 import org.jetbrains.letsPlot.core.spec.config.PlotConfig
 import org.jetbrains.letsPlot.core.util.MonolithicCommon
 import org.jetbrains.letsPlot.core.util.MonolithicCommon.PlotsBuildResult.Error
@@ -271,7 +272,11 @@ internal fun buildPlotFromProcessedSpecsIntern(
     }
 
     val success = buildResult as Success
-    val result = FigureToHtml(success.buildInfo, wrapperElement).eval(isRoot = true)
+    val result = FigureToHtml(
+        success.buildInfo,
+        wrapperElement,
+        comixStylizer = ComixStyleConfig.stylizerFromPlotSpec(plotSpec),
+    ).eval(isRoot = true)
 
     val computationMessages = success.buildInfo.computationMessages
     messageHandler.showComputationMessages(computationMessages)

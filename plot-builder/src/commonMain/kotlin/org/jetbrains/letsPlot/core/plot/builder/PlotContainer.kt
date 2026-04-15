@@ -11,11 +11,13 @@ import org.jetbrains.letsPlot.commons.registration.Disposable
 import org.jetbrains.letsPlot.core.canvas.CanvasDrawable
 import org.jetbrains.letsPlot.core.interact.event.ToolEventDispatcher
 import org.jetbrains.letsPlot.core.interact.event.UnsupportedToolEventDispatcher
+import org.jetbrains.letsPlot.core.plot.builder.comix.ComixStylizer
 import org.jetbrains.letsPlot.core.plot.builder.interact.PlotToolEventDispatcher
 import org.jetbrains.letsPlot.datamodel.svg.dom.SvgSvgElement
 
 class PlotContainer constructor(
     val svgRoot: PlotSvgRoot,
+    private val comixStylizer: ComixStylizer? = null,
 ) : Disposable {
 
     val svg: SvgSvgElement
@@ -44,7 +46,8 @@ class PlotContainer constructor(
                 flippedAxis = plot.flippedAxis,
                 theme = plot.theme,
                 styleSheet = plot.styleSheet,
-                plotContext = plot.plotContext
+                plotContext = plot.plotContext,
+                comixStylizer = comixStylizer,
             )
             plot.interactor = plotInteractor
 
@@ -55,6 +58,7 @@ class PlotContainer constructor(
         }
 
         svgRoot.ensureContentBuilt()
+        comixStylizer?.stylize(svgRoot.svg)
     }
 
     override fun dispose() {

@@ -31,6 +31,7 @@ from .stat import *
 from .theme_ import *
 from .theme_set import *
 from .tooltip import *
+from .comix_style import *
 
 __all__ = (coord.__all__ +
            core.__all__ +
@@ -53,6 +54,7 @@ __all__ = (coord.__all__ +
            stat.__all__ +
            theme_.__all__ +
            theme_set.__all__ +
+           comix_style.__all__ +
            tooltip.__all__ +
            annotation.__all__ +
            marginal_layer.__all__ +

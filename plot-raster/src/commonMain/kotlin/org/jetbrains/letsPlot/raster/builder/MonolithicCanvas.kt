@@ -6,6 +6,7 @@
 package org.jetbrains.letsPlot.raster.builder
 
 import org.jetbrains.letsPlot.commons.geometry.DoubleVector
+import org.jetbrains.letsPlot.core.spec.config.ComixStyleConfig
 import org.jetbrains.letsPlot.core.util.MonolithicCommon
 import org.jetbrains.letsPlot.core.util.sizing.SizingPolicy
 import org.jetbrains.letsPlot.datamodel.svg.dom.SvgSvgElement
@@ -28,7 +29,10 @@ object MonolithicCanvas {
 
         val success = buildResult as MonolithicCommon.PlotsBuildResult.Success
 
-        val figure = FigureToViewModel.eval(success.buildInfo)
+        val figure = FigureToViewModel.eval(
+            success.buildInfo,
+            comixStylizer = ComixStyleConfig.stylizerFromPlotSpec(plotSpec),
+        )
 
         val computationMessages = success.buildInfo.computationMessages
         computationMessagesHandler(computationMessages)

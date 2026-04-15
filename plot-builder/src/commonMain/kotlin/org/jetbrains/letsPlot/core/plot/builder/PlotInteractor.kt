@@ -26,6 +26,7 @@ import org.jetbrains.letsPlot.core.plot.base.tooltip.VerticalAxisTooltipPosition
 import org.jetbrains.letsPlot.core.plot.builder.interact.context.MouseDragSelectionStrategy
 import org.jetbrains.letsPlot.core.plot.builder.interact.context.MouseWheelSelectionStrategy
 import org.jetbrains.letsPlot.core.plot.builder.interact.context.NoneSelectionStrategy
+import org.jetbrains.letsPlot.core.plot.builder.comix.ComixStylizer
 import org.jetbrains.letsPlot.core.plot.builder.interact.context.PlotTilesInteractionContext
 import org.jetbrains.letsPlot.core.plot.builder.tooltip.TooltipRenderer
 import org.jetbrains.letsPlot.datamodel.svg.dom.SvgNode
@@ -38,7 +39,8 @@ internal class PlotInteractor(
     flippedAxis: Boolean,
     theme: Theme,
     styleSheet: StyleSheet,
-    plotContext: PlotContext
+    plotContext: PlotContext,
+    comixStylizer: ComixStylizer? = null,
 ) : ToolInteractor, Disposable {
     val eventsManager: EventsManager = EventsManager()
 
@@ -61,7 +63,8 @@ internal class PlotInteractor(
             theme.plot().backgroundFill(),
             styleSheet,
             plotContext,
-            mouseEventPeer
+            mouseEventPeer,
+            comixStylizer,
         )
         reg.add(Registration.from(tooltipRenderer))
     }
