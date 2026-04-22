@@ -66,9 +66,11 @@ open class LinesHelper(
                 false -> path.coordinates
             }
 
+            val stylizedPath = ctx.plotContext.comicStylize.apply(visualPath)
+
             val element = when (filled) {
-                true -> LinePath.polygon(visualPath)
-                false -> LinePath.line(visualPath)
+                true -> LinePath.polygon(stylizedPath)
+                false -> LinePath.line(stylizedPath)
             }
 
             decorate(element, path.aes, filled)

@@ -9,9 +9,11 @@ import org.jetbrains.letsPlot.commons.formatting.string.StringFormat.ExponentFor
 import org.jetbrains.letsPlot.commons.intern.datetime.TimeZone
 import org.jetbrains.letsPlot.commons.interval.DoubleSpan
 import org.jetbrains.letsPlot.core.plot.base.Aes
+import org.jetbrains.letsPlot.core.plot.base.ComicStylize
 import org.jetbrains.letsPlot.core.plot.base.PlotContext
 import org.jetbrains.letsPlot.core.plot.base.Scale
 import org.jetbrains.letsPlot.core.plot.base.tooltip.text.TooltipFormatting
+import org.jetbrains.letsPlot.core.plot.builder.comix.SineWobble
 
 internal class PlotAssemblerPlotContext constructor(
     private val geomTiles: PlotGeomTiles,
@@ -20,6 +22,8 @@ internal class PlotAssemblerPlotContext constructor(
     private val myScaleFactor: Double = 1.0,
     private val messageConsumer: (String) -> Unit
 ) : PlotContext {
+
+    override val comicStylize: ComicStylize = SineWobble(30.0)
 
     private val tooltipFormatters: MutableMap<Aes<*>, (Any?) -> String> = HashMap()
 
