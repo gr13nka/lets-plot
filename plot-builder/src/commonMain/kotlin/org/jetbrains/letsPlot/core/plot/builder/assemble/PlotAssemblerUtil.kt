@@ -150,7 +150,7 @@ internal object PlotAssemblerUtil {
         }
 
         for (legendTitle in legendAssemblerByTitle.keys) {
-            val boxInfo = legendAssemblerByTitle.getValue(legendTitle).createLegend()
+            val boxInfo = legendAssemblerByTitle.getValue(legendTitle).createLegend(ctx.comicStylize)
             boxInfo?.let { legendBoxInfos.add(it) }
         }
         return legendBoxInfos

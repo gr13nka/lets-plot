@@ -11,6 +11,7 @@ import org.jetbrains.letsPlot.commons.interval.DoubleSpan
 import org.jetbrains.letsPlot.commons.values.Color
 import org.jetbrains.letsPlot.core.interact.InteractionContext
 import org.jetbrains.letsPlot.core.interact.InteractionUtil
+import org.jetbrains.letsPlot.core.plot.base.ComicStylize
 import org.jetbrains.letsPlot.core.plot.base.CoordinateSystem
 import org.jetbrains.letsPlot.core.plot.base.PlotContext
 import org.jetbrains.letsPlot.core.plot.base.Transform
@@ -86,6 +87,7 @@ internal class SquareFrameOfReference(
                 axisTheme = vAxisTheme,
                 labelAdjustments = labelAdjustments,
                 isDebugDrawing = isDebugDrawing,
+                comicStylize = plotContext.comicStylize,
             )
 
             val axisOrigin = marginsLayout.toAxisOrigin(
@@ -116,6 +118,7 @@ internal class SquareFrameOfReference(
                 axisTheme = hAxisTheme,
                 labelAdjustments = labelAdjustments,
                 isDebugDrawing = isDebugDrawing,
+                comicStylize = plotContext.comicStylize,
             )
 
             val axisOrigin = marginsLayout.toAxisOrigin(
@@ -146,6 +149,7 @@ internal class SquareFrameOfReference(
                 geomContentBounds = layoutInfo.geomContentBounds,
                 gridTheme = gridTheme,
                 panelTheme = theme.panel(),
+                comicStylize = plotContext.comicStylize,
             )
             val gridOrigin = layoutInfo.geomContentBounds.origin
             gridComponent.moveTo(gridOrigin)
@@ -170,6 +174,7 @@ internal class SquareFrameOfReference(
                 geomContentBounds = layoutInfo.geomContentBounds,
                 gridTheme = gridTheme,
                 panelTheme = theme.panel(),
+                comicStylize = plotContext.comicStylize,
             )
             val gridOrigin = layoutInfo.geomContentBounds.origin
             gridComponent.moveTo(gridOrigin)
@@ -244,6 +249,7 @@ internal class SquareFrameOfReference(
             axisTheme: AxisTheme,
             labelAdjustments: TickLabelAdjustments,
             isDebugDrawing: Boolean,
+            comicStylize: ComicStylize,
         ): SvgComponent {
             val axis = AxisComponent(
                 length = info.axisLength,
@@ -252,7 +258,8 @@ internal class SquareFrameOfReference(
                 labelAdjustments = labelAdjustments,
                 axisTheme = axisTheme,
                 hideAxis = hideAxis,
-                hideAxisBreaks = hideAxisBreaks
+                hideAxisBreaks = hideAxisBreaks,
+                comicStylize = comicStylize,
             )
 
             if (isDebugDrawing) {

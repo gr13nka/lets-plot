@@ -7,9 +7,11 @@ package org.jetbrains.letsPlot.core.spec.front
 
 import org.jetbrains.letsPlot.commons.interval.DoubleSpan
 import org.jetbrains.letsPlot.core.plot.base.Aes
+import org.jetbrains.letsPlot.core.plot.base.ComicStylize
 import org.jetbrains.letsPlot.core.plot.base.ContinuousTransform
 import org.jetbrains.letsPlot.core.plot.base.Scale
 import org.jetbrains.letsPlot.core.plot.base.ScaleMapper
+import org.jetbrains.letsPlot.core.plot.builder.comix.SineWobble
 import org.jetbrains.letsPlot.core.plot.base.scale.transform.Transforms
 import org.jetbrains.letsPlot.core.plot.builder.assemble.*
 import org.jetbrains.letsPlot.core.plot.builder.coord.CoordProvider
@@ -239,6 +241,8 @@ object PlotConfigFrontendUtil {
         val subtitle = config.subtitle?.takeIf { theme.plot().showSubtitle() }
         val caption = config.caption?.takeIf { theme.plot().showCaption() }
 
+        val comicStylize: ComicStylize? = if (config.comic) SineWobble() else null
+
         return PlotAssembler(
             plotGeomTiles,
             config.facets,
@@ -251,9 +255,10 @@ object PlotConfigFrontendUtil {
             guideOptionsMap = config.guideOptionsMap,
             plotSpecId = config.specId,
             tz = config.tz,
-            scaleFactor,
+            comicStylize = comicStylize,
+            scaleFactor = scaleFactor,
             detachedLegendsCollector = detachedLegendsCollector,
-            messageConsumer
+            messageConsumer = messageConsumer,
         )
     }
 }

@@ -8,6 +8,8 @@ package org.jetbrains.letsPlot.core.plot.builder.guide
 import org.jetbrains.letsPlot.commons.geometry.DoubleRectangle
 import org.jetbrains.letsPlot.commons.geometry.DoubleVector
 import org.jetbrains.letsPlot.commons.values.Color
+import org.jetbrains.letsPlot.core.plot.base.ComicStylize
+import org.jetbrains.letsPlot.core.plot.base.applyRect
 import org.jetbrains.letsPlot.core.plot.base.layout.TextJustification
 import org.jetbrains.letsPlot.core.plot.base.layout.TextJustification.Companion.applyJustification
 import org.jetbrains.letsPlot.core.plot.base.render.svg.Label
@@ -21,7 +23,9 @@ import org.jetbrains.letsPlot.datamodel.svg.dom.SvgGElement
 import org.jetbrains.letsPlot.datamodel.svg.dom.SvgNode
 import org.jetbrains.letsPlot.datamodel.svg.dom.SvgRectElement
 
-abstract class LegendBox : SvgComponent() {
+abstract class LegendBox(
+    protected val comicStylize: ComicStylize = ComicStylize.IDENTITY,
+) : SvgComponent() {
 
     var debug: Boolean = false
 
@@ -41,12 +45,12 @@ abstract class LegendBox : SvgComponent() {
 
     override fun buildComponent() {
         if (theme.showBackground()) {
-            add(SvgRectElement(spec.innerBounds).apply {
+            add(comicStylize.applyRect(spec.innerBounds).apply {
                 strokeColor().set(theme.backgroundColor())
                 strokeWidth().set(theme.backgroundStrokeWidth())
                 StrokeDashArraySupport.apply(this, theme.backgroundStrokeWidth(), theme.backgroundLineType())
                 fillColor().set(theme.backgroundFill())
-            })
+            } as SvgNode)
         }
 
         val innerGroup = SvgGElement()

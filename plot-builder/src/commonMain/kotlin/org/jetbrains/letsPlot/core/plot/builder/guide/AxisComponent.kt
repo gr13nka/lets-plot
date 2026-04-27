@@ -8,6 +8,7 @@ package org.jetbrains.letsPlot.core.plot.builder.guide
 import org.jetbrains.letsPlot.commons.geometry.DoubleRectangle
 import org.jetbrains.letsPlot.commons.geometry.DoubleVector
 import org.jetbrains.letsPlot.commons.values.Color
+import org.jetbrains.letsPlot.core.plot.base.ComicStylize
 import org.jetbrains.letsPlot.core.plot.base.render.linetype.LineType
 import org.jetbrains.letsPlot.core.plot.base.render.svg.Label
 import org.jetbrains.letsPlot.core.plot.base.render.svg.StrokeDashArraySupport
@@ -15,12 +16,18 @@ import org.jetbrains.letsPlot.core.plot.base.render.svg.SvgComponent
 import org.jetbrains.letsPlot.core.plot.base.render.svg.Text
 import org.jetbrains.letsPlot.core.plot.base.render.svg.Text.HorizontalAnchor.*
 import org.jetbrains.letsPlot.core.plot.base.render.svg.Text.VerticalAnchor.*
+import org.jetbrains.letsPlot.core.plot.base.render.svg.lineString
 import org.jetbrains.letsPlot.core.plot.base.theme.AxisTheme
 import org.jetbrains.letsPlot.core.plot.builder.AxisUtil.tickLabelBaseOffset
 import org.jetbrains.letsPlot.core.plot.builder.layout.PlotLabelSpecFactory
 import org.jetbrains.letsPlot.core.plot.builder.presentation.Style
+import org.jetbrains.letsPlot.datamodel.svg.dom.SvgColors
 import org.jetbrains.letsPlot.datamodel.svg.dom.SvgGElement
 import org.jetbrains.letsPlot.datamodel.svg.dom.SvgLineElement
+import org.jetbrains.letsPlot.datamodel.svg.dom.SvgNode
+import org.jetbrains.letsPlot.datamodel.svg.dom.SvgPathDataBuilder
+import org.jetbrains.letsPlot.datamodel.svg.dom.SvgPathElement
+import org.jetbrains.letsPlot.datamodel.svg.dom.SvgShape
 import org.jetbrains.letsPlot.datamodel.svg.dom.SvgUtils.transformTranslate
 
 class AxisComponent(
@@ -31,6 +38,7 @@ class AxisComponent(
     private val axisTheme: AxisTheme,
     private val hideAxis: Boolean = false,
     private val hideAxisBreaks: Boolean = false,
+    private val comicStylize: ComicStylize = ComicStylize.IDENTITY,
 ) : SvgComponent() {
 
     override fun buildComponent() {
@@ -107,13 +115,30 @@ class AxisComponent(
             val y1: Double = if (!orientation.isHorizontal) start else 0.0
             val y2: Double = if (!orientation.isHorizontal) end else 0.0
 
-            val axisLine = SvgLineElement(x1, y1, x2, y2).apply {
+            val axisLine = buildStylizedLine(DoubleVector(x1, y1), DoubleVector(x2, y2)) {
                 strokeWidth().set(axisTheme.lineWidth())
                 strokeColor().set(axisTheme.lineColor())
                 StrokeDashArraySupport.apply(this, axisTheme.lineWidth(), axisTheme.lineType())
             }
             rootElement.children().add(axisLine)
         }
+    }
+
+    private fun buildStylizedLine(
+        p0: DoubleVector,
+        p1: DoubleVector,
+        style: SvgShape.() -> Unit,
+    ): SvgNode {
+        val stylized = comicStylize.apply(listOf(p0, p1))
+        val shape: SvgShape = when {
+            stylized.size == 2 -> SvgLineElement(stylized[0].x, stylized[0].y, stylized[1].x, stylized[1].y)
+            stylized.size > 2 -> SvgPathElement(SvgPathDataBuilder().lineString(stylized).build()).apply {
+                fill().set(SvgColors.NONE)
+            }
+            else -> SvgPathElement()
+        }
+        shape.style()
+        return shape as SvgNode
     }
 
     private fun addTicks(ticks: TickData, tickLabelBaseOffset: DoubleVector) {
@@ -148,18 +173,17 @@ class AxisComponent(
         }
     }
 
-    private fun buildTickMark(style: TickStyle): SvgLineElement {
-        return SvgLineElement().apply {
+    private fun buildTickMark(style: TickStyle): SvgNode {
+        val end: DoubleVector = when (orientation) {
+            Orientation.LEFT ->   DoubleVector(-style.length, 0.0)
+            Orientation.RIGHT ->  DoubleVector( style.length, 0.0)
+            Orientation.TOP ->    DoubleVector(0.0, -style.length)
+            Orientation.BOTTOM -> DoubleVector(0.0,  style.length)
+        }
+        return buildStylizedLine(DoubleVector.ZERO, end) {
             strokeWidth().set(style.width)
             strokeColor().set(style.color)
             StrokeDashArraySupport.apply(this, style.width, style.lineType)
-
-            when (orientation) {
-                Orientation.LEFT ->   { x2().set(-style.length); y2().set(0.0) }
-                Orientation.RIGHT ->  { x2().set( style.length); y2().set(0.0) }
-                Orientation.TOP ->    { x2().set(0.0); y2().set(-style.length) }
-                Orientation.BOTTOM -> { x2().set(0.0); y2().set( style.length) }
-            }
         }
     }
 

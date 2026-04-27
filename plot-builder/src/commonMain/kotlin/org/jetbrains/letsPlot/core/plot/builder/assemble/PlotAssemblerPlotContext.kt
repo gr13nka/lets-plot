@@ -13,17 +13,15 @@ import org.jetbrains.letsPlot.core.plot.base.ComicStylize
 import org.jetbrains.letsPlot.core.plot.base.PlotContext
 import org.jetbrains.letsPlot.core.plot.base.Scale
 import org.jetbrains.letsPlot.core.plot.base.tooltip.text.TooltipFormatting
-import org.jetbrains.letsPlot.core.plot.builder.comix.SineWobble
 
 internal class PlotAssemblerPlotContext constructor(
     private val geomTiles: PlotGeomTiles,
     override val expFormat: ExponentFormat,
     override val tz: TimeZone?,
+    override val comicStylize: ComicStylize = ComicStylize.IDENTITY,
     private val myScaleFactor: Double = 1.0,
     private val messageConsumer: (String) -> Unit
 ) : PlotContext {
-
-    override val comicStylize: ComicStylize = SineWobble(30.0)
 
     private val tooltipFormatters: MutableMap<Aes<*>, (Any?) -> String> = HashMap()
 

@@ -11,6 +11,7 @@ import org.jetbrains.letsPlot.commons.values.Color
 import org.jetbrains.letsPlot.core.FeatureSwitch
 import org.jetbrains.letsPlot.core.plot.base.Aes
 import org.jetbrains.letsPlot.core.plot.base.Aesthetics
+import org.jetbrains.letsPlot.core.plot.base.ComicStylize
 import org.jetbrains.letsPlot.core.plot.base.PlotContext
 import org.jetbrains.letsPlot.core.plot.base.ScaleMapper
 import org.jetbrains.letsPlot.core.plot.base.aes.AestheticsDefaults
@@ -87,7 +88,7 @@ class LegendAssembler(
         )
     }
 
-    fun createLegend(): LegendBoxInfo? {
+    fun createLegend(comicStylize: ComicStylize = ComicStylize.IDENTITY): LegendBoxInfo? {
         val includeMarginalLayers = legendLayers.all { it.isMarginal } // Yes, if there are no 'core' layers.
         val legendLayers = legendLayers
             .filter { includeMarginalLayers || !it.isMarginal }
@@ -125,7 +126,7 @@ class LegendAssembler(
             spec = spec
         ) {
             override fun createSvgComponent(): LegendBox {
-                val c = LegendComponent(this.spec as LegendComponentSpec, panelTheme)
+                val c = LegendComponent(this.spec as LegendComponentSpec, panelTheme, comicStylize)
                 c.debug = DEBUG_DRAWING
                 return c
             }

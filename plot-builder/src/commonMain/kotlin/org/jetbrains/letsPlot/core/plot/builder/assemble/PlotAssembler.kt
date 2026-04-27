@@ -18,6 +18,7 @@ import org.jetbrains.letsPlot.core.plot.base.theme.Theme
 import org.jetbrains.letsPlot.core.plot.builder.FrameOfReferenceProvider
 import org.jetbrains.letsPlot.core.plot.builder.GeomLayer
 import org.jetbrains.letsPlot.core.plot.builder.MarginalLayerUtil
+import org.jetbrains.letsPlot.core.plot.base.ComicStylize
 import org.jetbrains.letsPlot.core.plot.builder.PlotSvgComponent
 import org.jetbrains.letsPlot.core.plot.builder.coord.CoordProvider
 import org.jetbrains.letsPlot.core.plot.builder.frame.BogusFrameOfReferenceProvider
@@ -43,6 +44,7 @@ class PlotAssembler constructor(
     guideOptionsMap: Map<GuideKey, GuideOptionsList> = HashMap(),
     private val plotSpecId: String?,
     private val tz: TimeZone?,
+    private val comicStylize: ComicStylize? = null,
     scaleFactor: Double = 1.0,
     private val detachedLegendsCollector: DetachedLegendsCollector?,
     private val messageConsumer: (String) -> Unit = {},
@@ -68,6 +70,7 @@ class PlotAssembler constructor(
             geomTiles,
             expFormat = extractExponentFormat(theme.exponentFormat),
             tz = tz,
+            comicStylize = comicStylize ?: ComicStylize.IDENTITY,
             scaleFactor,
             messageConsumer
         )

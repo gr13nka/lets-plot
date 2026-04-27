@@ -8,6 +8,7 @@ package org.jetbrains.letsPlot.core.plot.builder.guide
 import org.jetbrains.letsPlot.commons.geometry.DoubleRectangle
 import org.jetbrains.letsPlot.commons.geometry.DoubleVector
 import org.jetbrains.letsPlot.commons.values.Color
+import org.jetbrains.letsPlot.core.plot.base.ComicStylize
 import org.jetbrains.letsPlot.core.plot.base.render.LegendKeyElementFactory
 import org.jetbrains.letsPlot.core.plot.base.render.linetype.NamedLineType
 import org.jetbrains.letsPlot.core.plot.base.render.svg.GroupComponent
@@ -22,8 +23,9 @@ import org.jetbrains.letsPlot.datamodel.svg.dom.SvgNode
 
 class LegendComponent(
     override val spec: LegendComponentSpec,
-    private val panelTheme: PanelTheme
-) : LegendBox() {
+    private val panelTheme: PanelTheme,
+    comicStylize: ComicStylize = ComicStylize.IDENTITY,
+) : LegendBox(comicStylize) {
 
     override fun appendGuideContent(contentRoot: SvgNode): DoubleVector {
         val layout = spec.layout

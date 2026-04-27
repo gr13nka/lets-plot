@@ -8,6 +8,7 @@ package org.jetbrains.letsPlot.core.plot.builder.guide
 import org.jetbrains.letsPlot.commons.geometry.DoubleRectangle
 import org.jetbrains.letsPlot.commons.geometry.DoubleVector
 import org.jetbrains.letsPlot.commons.values.Color
+import org.jetbrains.letsPlot.core.plot.base.ComicStylize
 import org.jetbrains.letsPlot.core.plot.base.layout.Thickness
 import org.jetbrains.letsPlot.core.plot.base.render.linetype.LineType
 import org.jetbrains.letsPlot.core.plot.base.render.svg.StrokeDashArraySupport
@@ -24,7 +25,8 @@ class GridComponent constructor(
     private val isOrthogonal: Boolean,
     geomContentBounds: DoubleRectangle,
     private val gridTheme: PanelGridTheme,
-    panelTheme: PanelTheme
+    panelTheme: PanelTheme,
+    private val comicStylize: ComicStylize = ComicStylize.IDENTITY,
 ) : SvgComponent() {
     private val container = SvgGElement()
     private val start = 0.0
@@ -99,9 +101,10 @@ class GridComponent constructor(
         color: Color,
         lineType: LineType
     ): SvgNode {
+        val stylized = comicStylize.apply(lineString)
         val shapeElem: SvgShape = when {
-            lineString.size == 2 -> SvgLineElement(lineString[0].x, lineString[0].y, lineString[1].x, lineString[1].y)
-            lineString.size > 2 -> SvgPathElement(SvgPathDataBuilder().lineString(lineString).build())
+            stylized.size == 2 -> SvgLineElement(stylized[0].x, stylized[0].y, stylized[1].x, stylized[1].y)
+            stylized.size > 2 -> SvgPathElement(SvgPathDataBuilder().lineString(stylized).build())
             else -> SvgPathElement()
         }
 
