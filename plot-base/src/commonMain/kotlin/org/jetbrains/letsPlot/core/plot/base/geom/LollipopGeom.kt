@@ -19,8 +19,8 @@ import org.jetbrains.letsPlot.core.plot.base.render.SvgRoot
 import org.jetbrains.letsPlot.core.plot.base.render.point.NamedShape
 import org.jetbrains.letsPlot.core.plot.base.render.point.PointShapeSvg
 import org.jetbrains.letsPlot.core.plot.base.tooltip.GeomTargetCollector
+import org.jetbrains.letsPlot.datamodel.svg.dom.SvgElement
 import org.jetbrains.letsPlot.datamodel.svg.dom.SvgGElement
-import org.jetbrains.letsPlot.datamodel.svg.dom.SvgLineElement
 import kotlin.math.pow
 import kotlin.math.sqrt
 
@@ -155,7 +155,7 @@ class LollipopGeom : GeomBase(), WithWidth, WithHeight {
             return wrap(o)
         }
 
-        fun createStick(helper: GeomHelper): SvgLineElement? {
+        fun createStick(helper: GeomHelper): SvgElement? {
             val clientBase = helper.toClient(base, point) ?: return null // base of the lollipop stick
             val clientHead = helper.toClient(head, point) ?: return null // center of the lollipop candy
             val stickLength = sqrt((clientHead.x - clientBase.x).pow(2) + (clientHead.y - clientBase.y).pow(2))
@@ -163,10 +163,10 @@ class LollipopGeom : GeomBase(), WithWidth, WithHeight {
                 return null
             }
             val neck = shiftHeadToBase(clientBase, clientHead, candyRadius) // meeting point of candy and stick
-            val line = SvgLineElement(clientBase.x, clientBase.y, neck.x, neck.y)
-            GeomHelper.decorate(line, point, applyAlphaToAll = true, strokeScaler = AesScaling::lineWidth)
+            val stick = helper.ctx.plotContext.comicStylize.applyLine(clientBase, neck)
+            GeomHelper.decorate(stick, point, applyAlphaToAll = true, strokeScaler = AesScaling::lineWidth)
 
-            return line
+            return stick as SvgElement
         }
 
         private fun shiftHeadToBase(

@@ -9,6 +9,7 @@ import org.jetbrains.letsPlot.commons.geometry.DoubleRectangle
 import org.jetbrains.letsPlot.commons.geometry.DoubleVector
 import org.jetbrains.letsPlot.commons.intern.math.areEqual
 import org.jetbrains.letsPlot.commons.values.FontFace
+import org.jetbrains.letsPlot.commons.values.FontFamily
 import org.jetbrains.letsPlot.core.plot.base.Aes
 import org.jetbrains.letsPlot.core.plot.base.DataPointAesthetics
 import org.jetbrains.letsPlot.core.plot.base.GeomContext
@@ -18,6 +19,7 @@ import org.jetbrains.letsPlot.core.plot.base.aes.AesScaling
 import org.jetbrains.letsPlot.core.plot.base.aes.AestheticsUtil
 import org.jetbrains.letsPlot.core.plot.base.render.svg.Label
 import org.jetbrains.letsPlot.core.plot.base.render.svg.Text
+import org.jetbrains.letsPlot.core.plot.base.theme.ComicFontFamilyRegistry
 import org.jetbrains.letsPlot.datamodel.svg.dom.SvgGElement
 import org.jetbrains.letsPlot.datamodel.svg.dom.SvgPathDataBuilder
 import org.jetbrains.letsPlot.datamodel.svg.dom.SvgPathElement
@@ -243,6 +245,9 @@ object TextUtil {
     ): SvgGElement {
         val label = Label(text)
         decorate(label, p, sizeUnitRatio, applyAlpha = true)
+        if (ctx.plotContext.comicStylize != null && p.family() == FontFamily.DEF_FAMILY_NAME) {
+            label.setFontFamily(ComicFontFamilyRegistry.COMIC_FONT_FAMILY)
+        }
         val hAnchor = hAnchor(p, location, boundsCenter)
         label.setHorizontalAnchor(hAnchor)
 
@@ -293,6 +298,9 @@ object TextUtil {
         // Text element
         val label = Label(text)
         decorate(label, p, sizeUnitRatio, applyAlpha = labelOptions.alphaStroke)
+        if (ctx.plotContext.comicStylize != null && p.family() == FontFamily.DEF_FAMILY_NAME) {
+            label.setFontFamily(ComicFontFamilyRegistry.COMIC_FONT_FAMILY)
+        }
 
         val padding = fontSize * labelOptions.paddingFactor
         val xPosition = when (hAnchor) {

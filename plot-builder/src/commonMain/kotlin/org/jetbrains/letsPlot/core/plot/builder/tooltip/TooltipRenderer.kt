@@ -70,7 +70,7 @@ internal class TooltipRenderer(
     init {
         val viewport = DoubleRectangle(DoubleVector.ZERO, plotSize)
         myLayoutManager = LayoutManager(viewport, HorizontalAlignment.LEFT, MARGIN_BETWEEN_TOOLTIPS)
-        measuringTooltipBox = TooltipBox(styleSheet).apply {
+        measuringTooltipBox = TooltipBox(styleSheet, plotContext.comicStylize).apply {
             rootGroup.visibility().set(Visibility.HIDDEN)
         }
 
@@ -82,7 +82,7 @@ internal class TooltipRenderer(
             parent = SvgGElement().also { myTooltipLayer.children().add(it) }
         )
         tooltipStorage = RetainableComponents(
-            itemFactory = { TooltipBox(styleSheet) },
+            itemFactory = { TooltipBox(styleSheet, plotContext.comicStylize) },
             parent = SvgGElement().also { myTooltipLayer.children().add(it) }
         )
 

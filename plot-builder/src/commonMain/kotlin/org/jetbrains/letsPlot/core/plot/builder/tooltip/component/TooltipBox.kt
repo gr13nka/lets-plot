@@ -9,6 +9,7 @@ import org.jetbrains.letsPlot.commons.geometry.DoubleRectangle
 import org.jetbrains.letsPlot.commons.geometry.DoubleVector
 import org.jetbrains.letsPlot.commons.intern.math.toRadians
 import org.jetbrains.letsPlot.commons.values.Color
+import org.jetbrains.letsPlot.core.plot.base.ComicStylize
 import org.jetbrains.letsPlot.core.plot.base.render.linetype.LineType
 import org.jetbrains.letsPlot.core.plot.base.render.svg.*
 import org.jetbrains.letsPlot.core.plot.base.tooltip.TooltipSpec
@@ -37,7 +38,8 @@ import kotlin.math.max
 import kotlin.math.min
 
 class TooltipBox(
-    private val styleSheet: StyleSheet
+    private val styleSheet: StyleSheet,
+    private val comicStylize: ComicStylize? = null
 ) : SvgComponent() {
     enum class Orientation {
         VERTICAL,
@@ -193,74 +195,101 @@ class TooltipBox(
             val vertFootingIndent = -calculatePointerFootingIndent(contentRect.height)
             val horFootingIndent = calculatePointerFootingIndent(contentRect.width)
 
-            myPointerPath.d().set(
-                SvgPathDataBuilder().apply {
-                    with(contentRect) {
+            if (comicStylize == null) {
+                myPointerPath.d().set(
+                    SvgPathDataBuilder().apply {
+                        with(contentRect) {
 
-                        fun lineToIf(p: DoubleVector, isTrue: Boolean) {
-                            if (isTrue) lineTo(p)
+                            fun lineToIf(p: DoubleVector, isTrue: Boolean) {
+                                if (isTrue) lineTo(p)
+                            }
+
+                            fun corner(controlStart: DoubleVector, controlEnd: DoubleVector, to: DoubleVector) {
+                                // todo parameters: (x, y, radiusX, radiusY)
+                                lineTo(controlStart)
+                                if (controlStart != to) curveTo(controlStart, controlEnd, to)
+                            }
+
+                            // start point
+                            moveTo(right - myBorderRadius, bottom)
+
+                            // right-bottom
+                            corner(
+                                DoubleVector(right - myBorderRadius, bottom),
+                                DoubleVector(right, bottom),
+                                DoubleVector(right, bottom - myBorderRadius)
+                            )
+
+                            // right side
+                            lineTo(right, bottom + vertFootingIndent)
+                            lineToIf(pointerCoord, pointerDirection == RIGHT)
+                            lineTo(right, top - vertFootingIndent)
+
+                            // right-top corner
+                            corner(
+                                DoubleVector(right, top + myBorderRadius),
+                                DoubleVector(right, top),
+                                DoubleVector(right - myBorderRadius, top)
+                            )
+
+                            // top side
+                            lineTo(right - horFootingIndent, top)
+                            lineToIf(pointerCoord, pointerDirection == UP)
+                            lineTo(left + horFootingIndent, top)
+
+                            // left-top corner
+                            corner(
+                                DoubleVector(left + myBorderRadius, top),
+                                DoubleVector(left, top),
+                                DoubleVector(left, top + myBorderRadius)
+                            )
+
+                            // left side
+                            lineTo(left, top - vertFootingIndent)
+                            lineToIf(pointerCoord, pointerDirection == LEFT)
+                            lineTo(left, bottom + vertFootingIndent)
+
+                            // left-bottom corner
+                            corner(
+                                DoubleVector(left, bottom - myBorderRadius),
+                                DoubleVector(left, bottom),
+                                DoubleVector(left + myBorderRadius, bottom)
+                            )
+
+                            // bottom side
+                            lineTo(left + horFootingIndent, bottom)
+                            lineToIf(pointerCoord, pointerDirection == DOWN)
+                            lineTo(right - horFootingIndent, bottom)
+                            lineTo(right - myBorderRadius, bottom)
                         }
-
-                        fun corner(controlStart: DoubleVector, controlEnd: DoubleVector, to: DoubleVector) {
-                            // todo parameters: (x, y, radiusX, radiusY)
-                            lineTo(controlStart)
-                            if (controlStart != to) curveTo(controlStart, controlEnd, to)
-                        }
-
-                        // start point
-                        moveTo(right - myBorderRadius, bottom)
-
-                        // right-bottom
-                        corner(
-                            DoubleVector(right - myBorderRadius, bottom),
-                            DoubleVector(right, bottom),
-                            DoubleVector(right, bottom - myBorderRadius)
-                        )
-
-                        // right side
-                        lineTo(right, bottom + vertFootingIndent)
-                        lineToIf(pointerCoord, pointerDirection == RIGHT)
-                        lineTo(right, top - vertFootingIndent)
-
-                        // right-top corner
-                        corner(
-                            DoubleVector(right, top + myBorderRadius),
-                            DoubleVector(right, top),
-                            DoubleVector(right - myBorderRadius, top)
-                        )
-
-                        // top side
-                        lineTo(right - horFootingIndent, top)
-                        lineToIf(pointerCoord, pointerDirection == UP)
-                        lineTo(left + horFootingIndent, top)
-
-                        // left-top corner
-                        corner(
-                            DoubleVector(left + myBorderRadius, top),
-                            DoubleVector(left, top),
-                            DoubleVector(left, top + myBorderRadius)
-                        )
-
-                        // left side
-                        lineTo(left, top - vertFootingIndent)
-                        lineToIf(pointerCoord, pointerDirection == LEFT)
-                        lineTo(left, bottom + vertFootingIndent)
-
-                        // left-bottom corner
-                        corner(
-                            DoubleVector(left, bottom - myBorderRadius),
-                            DoubleVector(left, bottom),
-                            DoubleVector(left + myBorderRadius, bottom)
-                        )
-
-                        // bottom side
-                        lineTo(left + horFootingIndent, bottom)
-                        lineToIf(pointerCoord, pointerDirection == DOWN)
-                        lineTo(right - horFootingIndent, bottom)
-                        lineTo(right - myBorderRadius, bottom)
+                    }.build()
+                )
+            } else {
+                // Comic mode
+                val points = with(contentRect) {
+                    buildList {
+                        add(DoubleVector(right, bottom))
+                        add(DoubleVector(right, bottom + vertFootingIndent))
+                        if (pointerDirection == RIGHT) add(pointerCoord)
+                        add(DoubleVector(right, top - vertFootingIndent))
+                        add(DoubleVector(right, top))
+                        add(DoubleVector(right - horFootingIndent, top))
+                        if (pointerDirection == UP) add(pointerCoord)
+                        add(DoubleVector(left + horFootingIndent, top))
+                        add(DoubleVector(left, top))
+                        add(DoubleVector(left, top - vertFootingIndent))
+                        if (pointerDirection == LEFT) add(pointerCoord)
+                        add(DoubleVector(left, bottom + vertFootingIndent))
+                        add(DoubleVector(left, bottom))
+                        add(DoubleVector(left + horFootingIndent, bottom))
+                        if (pointerDirection == DOWN) add(pointerCoord)
+                        add(DoubleVector(right - horFootingIndent, bottom))
                     }
-                }.build()
-            )
+                }
+                myPointerPath.d().set(
+                    SvgPathDataBuilder().lineString(comicStylize.apply(points)).closePath().build()
+                )
+            }
 
             if (usePointMarker) {
                 myHighlightPoint.d().set(trianglePointer(pointerCoord).build())

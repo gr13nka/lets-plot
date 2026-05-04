@@ -13,6 +13,8 @@ import org.jetbrains.letsPlot.commons.interval.DoubleSpan
 interface PlotContext {
     val expFormat: ExponentFormat
     val tz: TimeZone?
+    val comicStylize: ComicStylize?
+       get() = null
 
     fun hasScale(aes: Aes<*>): Boolean
     fun getScale(aes: Aes<*>): Scale

@@ -145,12 +145,12 @@ internal object PlotAssemblerUtil {
 
         val legendBoxInfos = ArrayList<LegendBoxInfo>()
         for (legendTitle in colorBarAssemblerByTitle.keys) {
-            val boxInfo = colorBarAssemblerByTitle.getValue(legendTitle).createColorBar()
+            val boxInfo = colorBarAssemblerByTitle.getValue(legendTitle).createColorBar(ctx.comicStylize)
             boxInfo?.let { legendBoxInfos.add(it) }
         }
 
         for (legendTitle in legendAssemblerByTitle.keys) {
-            val boxInfo = legendAssemblerByTitle.getValue(legendTitle).createLegend()
+            val boxInfo = legendAssemblerByTitle.getValue(legendTitle).createLegend(ctx.comicStylize)
             boxInfo?.let { legendBoxInfos.add(it) }
         }
         return legendBoxInfos

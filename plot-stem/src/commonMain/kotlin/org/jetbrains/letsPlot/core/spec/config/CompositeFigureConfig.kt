@@ -7,6 +7,7 @@ package org.jetbrains.letsPlot.core.spec.config
 
 import org.jetbrains.letsPlot.commons.geometry.DoubleRectangle
 import org.jetbrains.letsPlot.commons.geometry.DoubleVector
+import org.jetbrains.letsPlot.core.plot.base.theme.ComicFontFamilyRegistry
 import org.jetbrains.letsPlot.core.plot.base.theme.FontFamilyRegistry
 import org.jetbrains.letsPlot.core.plot.base.theme.Theme
 import org.jetbrains.letsPlot.core.plot.builder.assemble.PlotFacets
@@ -22,6 +23,7 @@ import org.jetbrains.letsPlot.core.spec.Option
 import org.jetbrains.letsPlot.core.spec.Option.Meta.Kind.GG_TOOLBAR
 import org.jetbrains.letsPlot.core.spec.Option.Plot.CAPTION
 import org.jetbrains.letsPlot.core.spec.Option.Plot.CAPTION_TEXT
+import org.jetbrains.letsPlot.core.spec.Option.Plot.COMIC
 import org.jetbrains.letsPlot.core.spec.Option.Plot.SUBTITLE_TEXT
 import org.jetbrains.letsPlot.core.spec.Option.Plot.THEME
 import org.jetbrains.letsPlot.core.spec.Option.Plot.TITLE
@@ -61,7 +63,9 @@ class CompositeFigureConfig constructor(
         get() = getMap(CAPTION)[CAPTION_TEXT] as String?
 
     init {
-        val fontFamilyRegistry: FontFamilyRegistry = FontFamilyRegistryConfig(this).createFontFamilyRegistry()
+        val figureComic: Boolean = getBoolean(COMIC, def = false)
+        val fontFamilyRegistry: FontFamilyRegistry = if (figureComic) ComicFontFamilyRegistry()
+        else FontFamilyRegistryConfig(this).createFontFamilyRegistry()
         theme = ThemeConfig(
             themeOptions = getMap(THEME),
             containerTheme = containerTheme,
@@ -85,7 +89,11 @@ class CompositeFigureConfig constructor(
 //                    spec + (GG_TOOLBAR to ggToolbar)
 //                } ?: spec
 
-                val extendedSpec = spec
+                val extendedSpec = if (figureComic && !spec.containsKey(COMIC)) {
+                    spec + (COMIC to true)
+                } else {
+                    spec
+                }
 
                 when (PlotConfig.figSpecKind(extendedSpec)) {
                     FigKind.PLOT_SPEC -> PlotConfigFrontend.create(

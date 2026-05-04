@@ -41,8 +41,10 @@ class RectanglesHelper(
                     )
                 ) { toClient(it, p) }
 
+                val stylizedPoly = ctx.plotContext.comicStylize?.apply(polyRect) ?: polyRect
+
                 val svgPoly = SvgPathElement()
-                svgPoly.d().set(SvgPathDataBuilder().lineString(polyRect).build())
+                svgPoly.d().set(SvgPathDataBuilder().lineString(stylizedPoly).build())
 
                 decorate(svgPoly, p)
                 handler(p, svgPoly, polyRect)
@@ -54,9 +56,9 @@ class RectanglesHelper(
         myAesthetics.dataPoints().forEach { p ->
             geometryFactory(p)?.let { rect ->
                 val clientRect = toClient(rect, p) ?: return@let
-                val svgRect = SvgRectElement(clientRect)
+                val svgRect = ctx.plotContext.comicStylize.applyRect(clientRect)
                 decorate(svgRect, p)
-                handler(p, svgRect, clientRect)
+                handler(p, svgRect as SvgNode, clientRect)
             }
         }
     }
@@ -68,10 +70,10 @@ class RectanglesHelper(
             val p = myAesthetics.dataPointAt(index)
             val clientRect = geometryFactory(p) ?: continue
 
-            val svgRect = SvgRectElement(clientRect)
+            val svgRect = ctx.plotContext.comicStylize.applyRect(clientRect)
             decorate(svgRect, p)
 
-            result.add(svgRect)
+            result.add(svgRect as SvgNode)
         }
 
         return result
@@ -129,7 +131,8 @@ class RectanglesHelper(
 
                     onGeometry(p, null, simplified)
 
-                    val slimShape = SvgSlimElements.path(SvgPathDataBuilder().lineString(simplified).build())
+                    val stylized = ctx.plotContext.comicStylize?.apply(simplified) ?: simplified
+                    val slimShape = SvgSlimElements.path(SvgPathDataBuilder().lineString(stylized).build())
                     decorateSlimShape(slimShape, p)
                     slimShape.appendTo(group)
                 } else {
@@ -137,7 +140,13 @@ class RectanglesHelper(
 
                     onGeometry(p, clientRect, null)
 
-                    val slimShape = SvgSlimElements.rect(clientRect.left, clientRect.top, clientRect.width, clientRect.height)
+                    val comicStylize = ctx.plotContext.comicStylize
+                    val slimShape = if (comicStylize == null) {
+                        SvgSlimElements.rect(clientRect.left, clientRect.top, clientRect.width, clientRect.height)
+                    } else {
+                        val polygon = comicStylize.rectPolygon(clientRect)
+                        SvgSlimElements.path(SvgPathDataBuilder().lineString(polygon).build())
+                    }
                     decorateSlimShape(slimShape, p)
                     slimShape.appendTo(group)
                 }

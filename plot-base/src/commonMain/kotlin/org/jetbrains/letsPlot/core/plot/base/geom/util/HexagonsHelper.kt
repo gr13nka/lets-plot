@@ -44,7 +44,8 @@ class HexagonsHelper(
                     it.firstOrNull() ?: emptyList()
                 }
 
-                val element = LinePath.polygon(simplified)
+                val wobbled = ctx.plotContext.comicStylize?.apply(simplified) ?: simplified
+                val element = LinePath.polygon(wobbled)
                 decorate(element, p, true)
                 hexagons.add(element)
 
@@ -53,7 +54,8 @@ class HexagonsHelper(
                 // Correct hexagon should have 7 points, including the closing one.
                 val clientHex = hex.mapNotNull { toClient(it, p) }.takeIf { it.size == 7 } ?: continue
 
-                val element = LinePath.polygon(clientHex)
+                val wobbled = ctx.plotContext.comicStylize?.apply(clientHex) ?: clientHex
+                val element = LinePath.polygon(wobbled)
                 decorate(element, p, true)
                 hexagons.add(element)
 

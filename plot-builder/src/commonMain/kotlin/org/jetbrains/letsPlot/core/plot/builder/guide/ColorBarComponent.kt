@@ -9,6 +9,7 @@ import org.jetbrains.letsPlot.commons.geometry.DoubleRectangle
 import org.jetbrains.letsPlot.commons.geometry.DoubleVector
 import org.jetbrains.letsPlot.commons.interval.DoubleSpan
 import org.jetbrains.letsPlot.commons.values.Color
+import org.jetbrains.letsPlot.core.plot.base.ComicStylize
 import org.jetbrains.letsPlot.core.plot.base.ScaleMapper
 import org.jetbrains.letsPlot.core.plot.base.render.svg.Label
 import org.jetbrains.letsPlot.core.plot.base.render.svg.StrokeDashArraySupport
@@ -24,7 +25,8 @@ import kotlin.math.max
 
 class ColorBarComponent(
     override val spec: ColorBarComponentSpec,
-) : LegendBox() {
+    comicStylize: ComicStylize? = null,
+) : LegendBox(comicStylize) {
 
     override fun appendGuideContent(contentRoot: SvgNode): DoubleVector {
         val layout = spec.layout

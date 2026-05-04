@@ -11,9 +11,11 @@ import org.jetbrains.letsPlot.core.commons.data.DataType
 import org.jetbrains.letsPlot.core.plot.base.Aes
 import org.jetbrains.letsPlot.core.plot.base.DataFrame
 import org.jetbrains.letsPlot.core.plot.base.data.DataFrameUtil
+import org.jetbrains.letsPlot.core.plot.base.theme.ComicFontFamilyRegistry
 import org.jetbrains.letsPlot.core.plot.base.theme.Theme
 import org.jetbrains.letsPlot.core.plot.builder.assemble.PlotFacets
 import org.jetbrains.letsPlot.core.plot.builder.data.OrderOptionUtil
+import org.jetbrains.letsPlot.core.plot.builder.defaultTheme.values.ThemeOption
 import org.jetbrains.letsPlot.core.plot.builder.scale.MapperProvider
 import org.jetbrains.letsPlot.core.plot.builder.scale.ScaleProvider
 import org.jetbrains.letsPlot.core.spec.FigKind
@@ -24,6 +26,7 @@ import org.jetbrains.letsPlot.core.spec.Option.Meta
 import org.jetbrains.letsPlot.core.spec.Option.Meta.DATA_META
 import org.jetbrains.letsPlot.core.spec.Option.Plot.CAPTION
 import org.jetbrains.letsPlot.core.spec.Option.Plot.CAPTION_TEXT
+import org.jetbrains.letsPlot.core.spec.Option.Plot.COMIC
 import org.jetbrains.letsPlot.core.spec.Option.Plot.FACET
 import org.jetbrains.letsPlot.core.spec.Option.Plot.LAYERS
 import org.jetbrains.letsPlot.core.spec.Option.Plot.SCALES
@@ -61,6 +64,8 @@ abstract class PlotConfig(
         get() = getMap(TITLE)[SUBTITLE_TEXT] as String?
     val caption: String?
         get() = getMap(CAPTION)[CAPTION_TEXT] as String?
+    val comic: Boolean
+        get() = getBoolean(COMIC, def = false)
 
     val containsLiveMap: Boolean
         get() = layerConfigs.any(LayerConfig::isLiveMap)
@@ -69,9 +74,13 @@ abstract class PlotConfig(
     val dataTypeByAes: (aes: Aes<*>) -> DataType
 
     init {
-        val fontFamilyRegistry = FontFamilyRegistryConfig(this).createFontFamilyRegistry()
+        val fontFamilyRegistry = if (comic) ComicFontFamilyRegistry()
+        else FontFamilyRegistryConfig(this).createFontFamilyRegistry()
+        val themeOpts = if (comic)
+            mapOf(ThemeOption.LEGEND_BKGR_RECT to mapOf(ThemeOption.Elem.SIZE to 1.0)) + getMap(THEME)
+        else getMap(THEME)
         theme = ThemeConfig(
-            themeOptions = getMap(THEME),
+            themeOptions = themeOpts,
             containerTheme = containerTheme,
             fontFamilyRegistry
         ).theme

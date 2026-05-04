@@ -17,6 +17,7 @@ import org.jetbrains.letsPlot.core.plot.base.geom.util.RectangleTooltipHelper
 import org.jetbrains.letsPlot.core.plot.base.geom.util.RectanglesHelper
 import org.jetbrains.letsPlot.core.plot.base.render.LegendKeyElementFactory
 import org.jetbrains.letsPlot.core.plot.base.render.SvgRoot
+import org.jetbrains.letsPlot.datamodel.svg.dom.SvgElement
 import org.jetbrains.letsPlot.datamodel.svg.dom.SvgGElement
 import org.jetbrains.letsPlot.datamodel.svg.dom.SvgLineElement
 
@@ -53,7 +54,7 @@ class ErrorBarGeom : GeomBase(), WithWidth {
 
             val rect = DoubleRectangle(x - width / 2, ymin, width, height)
             val segments = errorBarShapeSegments(rect)
-            val g = errorBarShape(segments, p, geomHelper)
+            val g = errorBarShape(segments, p, geomHelper, ctx.plotContext.comicStylize)
             root.add(g)
         }
         // tooltip
@@ -134,15 +135,16 @@ class ErrorBarGeom : GeomBase(), WithWidth {
         private fun errorBarShape(
             segments: List<DoubleSegment>,
             p: DataPointAesthetics,
-            geomHelper: GeomHelper
+            geomHelper: GeomHelper,
+            comicStylize: ComicStylize?
         ): SvgGElement {
             val g = SvgGElement()
-            val elementHelper = geomHelper.createSvgElementHelper()
-            elementHelper.setStrokeAlphaEnabled(true)
             segments.forEach { segment ->
-                g.children().add(
-                    elementHelper.createLine(segment.start, segment.end, p)!!.first
-                )
+                val start = geomHelper.toClient(segment.start, p) ?: return@forEach
+                val end = geomHelper.toClient(segment.end, p) ?: return@forEach
+                val line = comicStylize.applyLine(start, end)
+                GeomHelper.decorate(line, p, applyAlphaToAll = true)
+                g.children().add(line as SvgElement)
             }
             return g
         }

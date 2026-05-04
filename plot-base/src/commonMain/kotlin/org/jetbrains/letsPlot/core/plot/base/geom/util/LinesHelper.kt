@@ -66,9 +66,11 @@ open class LinesHelper(
                 false -> path.coordinates
             }
 
+            val stylizedPath = ctx.plotContext.comicStylize?.apply(visualPath) ?: visualPath
+
             val element = when (filled) {
-                true -> LinePath.polygon(visualPath)
-                false -> LinePath.line(visualPath)
+                true -> LinePath.polygon(stylizedPath)
+                false -> LinePath.line(stylizedPath)
             }
 
             decorate(element, path.aes, filled)
@@ -120,6 +122,7 @@ open class LinesHelper(
         val svg = clientPolygonData.map { polygon ->
             val element = polygon.coordinates
                 .map { douglasPeucker(it, DOUGLAS_PEUCKER_PIXEL_THRESHOLD) }
+                .map { ctx.plotContext.comicStylize?.apply(it) ?: it }
                 .let(::insertPathSeparators)
                 .let { LinePath.polygon(it) }
 
@@ -249,12 +252,11 @@ open class LinesHelper(
             val points = pathData.coordinates
 
             if (points.isNotEmpty()) {
-                val path = LinePath.polygon(
-                    when {
-                        simplifyBorders -> douglasPeucker(points, DOUGLAS_PEUCKER_PIXEL_THRESHOLD)
-                        else -> points
-                    }
-                )
+                val simplified = when {
+                    simplifyBorders -> douglasPeucker(points, DOUGLAS_PEUCKER_PIXEL_THRESHOLD)
+                    else -> points
+                }
+                val path = LinePath.polygon(ctx.plotContext.comicStylize?.apply(simplified) ?: simplified)
                 decorateFillingPart(path, pathData.aes)
                 path
             } else {

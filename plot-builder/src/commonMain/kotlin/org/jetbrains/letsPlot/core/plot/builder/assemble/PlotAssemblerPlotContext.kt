@@ -9,6 +9,7 @@ import org.jetbrains.letsPlot.commons.formatting.string.StringFormat.ExponentFor
 import org.jetbrains.letsPlot.commons.intern.datetime.TimeZone
 import org.jetbrains.letsPlot.commons.interval.DoubleSpan
 import org.jetbrains.letsPlot.core.plot.base.Aes
+import org.jetbrains.letsPlot.core.plot.base.ComicStylize
 import org.jetbrains.letsPlot.core.plot.base.PlotContext
 import org.jetbrains.letsPlot.core.plot.base.Scale
 import org.jetbrains.letsPlot.core.plot.base.tooltip.text.TooltipFormatting
@@ -17,6 +18,7 @@ internal class PlotAssemblerPlotContext constructor(
     private val geomTiles: PlotGeomTiles,
     override val expFormat: ExponentFormat,
     override val tz: TimeZone?,
+    override val comicStylize: ComicStylize? = null,
     private val myScaleFactor: Double = 1.0,
     private val messageConsumer: (String) -> Unit
 ) : PlotContext {

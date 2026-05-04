@@ -9,6 +9,7 @@ import org.jetbrains.letsPlot.commons.geometry.DoubleVector
 import org.jetbrains.letsPlot.commons.interval.DoubleSpan
 import org.jetbrains.letsPlot.commons.values.Color
 import org.jetbrains.letsPlot.core.FeatureSwitch
+import org.jetbrains.letsPlot.core.plot.base.ComicStylize
 import org.jetbrains.letsPlot.core.plot.base.Scale
 import org.jetbrains.letsPlot.core.plot.base.ScaleMapper
 import org.jetbrains.letsPlot.core.plot.base.guide.LegendDirection
@@ -33,7 +34,7 @@ class ColorBarAssembler constructor(
     private val theme: LegendTheme,
     private var colorBarOptions: ColorBarOptions?
 ) {
-    fun createColorBar(): LegendBoxInfo? {
+    fun createColorBar(comicStylize: ComicStylize? = null): LegendBoxInfo? {
         var scale = scale
         if (!scale.hasBreaks()) {
             scale = ScaleBreaksUtil.withBreaks(scale, transformedDomain, 5)
@@ -60,7 +61,7 @@ class ColorBarAssembler constructor(
             spec = spec
         ) {
             override fun createSvgComponent(): LegendBox {
-                val c = ColorBarComponent(this.spec as ColorBarComponentSpec)
+                val c = ColorBarComponent(this.spec as ColorBarComponentSpec, comicStylize)
                 c.debug = DEBUG_DRAWING
                 return c
             }

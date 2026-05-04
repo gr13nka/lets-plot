@@ -8,6 +8,8 @@ package org.jetbrains.letsPlot.core.plot.builder.guide
 import org.jetbrains.letsPlot.commons.geometry.DoubleRectangle
 import org.jetbrains.letsPlot.commons.geometry.DoubleVector
 import org.jetbrains.letsPlot.commons.values.Color
+import org.jetbrains.letsPlot.core.plot.base.ComicStylize
+import org.jetbrains.letsPlot.core.plot.base.applyLine
 import org.jetbrains.letsPlot.core.plot.base.render.linetype.LineType
 import org.jetbrains.letsPlot.core.plot.base.render.svg.Label
 import org.jetbrains.letsPlot.core.plot.base.render.svg.StrokeDashArraySupport
@@ -20,7 +22,7 @@ import org.jetbrains.letsPlot.core.plot.builder.AxisUtil.tickLabelBaseOffset
 import org.jetbrains.letsPlot.core.plot.builder.layout.PlotLabelSpecFactory
 import org.jetbrains.letsPlot.core.plot.builder.presentation.Style
 import org.jetbrains.letsPlot.datamodel.svg.dom.SvgGElement
-import org.jetbrains.letsPlot.datamodel.svg.dom.SvgLineElement
+import org.jetbrains.letsPlot.datamodel.svg.dom.SvgNode
 import org.jetbrains.letsPlot.datamodel.svg.dom.SvgUtils.transformTranslate
 
 class AxisComponent(
@@ -31,6 +33,7 @@ class AxisComponent(
     private val axisTheme: AxisTheme,
     private val hideAxis: Boolean = false,
     private val hideAxisBreaks: Boolean = false,
+    private val comicStylize: ComicStylize? = null,
 ) : SvgComponent() {
 
     override fun buildComponent() {
@@ -107,11 +110,11 @@ class AxisComponent(
             val y1: Double = if (!orientation.isHorizontal) start else 0.0
             val y2: Double = if (!orientation.isHorizontal) end else 0.0
 
-            val axisLine = SvgLineElement(x1, y1, x2, y2).apply {
+            val axisLine = comicStylize.applyLine(DoubleVector(x1, y1), DoubleVector(x2, y2)).apply {
                 strokeWidth().set(axisTheme.lineWidth())
                 strokeColor().set(axisTheme.lineColor())
                 StrokeDashArraySupport.apply(this, axisTheme.lineWidth(), axisTheme.lineType())
-            }
+            } as SvgNode
             rootElement.children().add(axisLine)
         }
     }
@@ -148,19 +151,18 @@ class AxisComponent(
         }
     }
 
-    private fun buildTickMark(style: TickStyle): SvgLineElement {
-        return SvgLineElement().apply {
+    private fun buildTickMark(style: TickStyle): SvgNode {
+        val end: DoubleVector = when (orientation) {
+            Orientation.LEFT ->   DoubleVector(-style.length, 0.0)
+            Orientation.RIGHT ->  DoubleVector( style.length, 0.0)
+            Orientation.TOP ->    DoubleVector(0.0, -style.length)
+            Orientation.BOTTOM -> DoubleVector(0.0,  style.length)
+        }
+        return comicStylize.applyLine(DoubleVector.ZERO, end).apply {
             strokeWidth().set(style.width)
             strokeColor().set(style.color)
             StrokeDashArraySupport.apply(this, style.width, style.lineType)
-
-            when (orientation) {
-                Orientation.LEFT ->   { x2().set(-style.length); y2().set(0.0) }
-                Orientation.RIGHT ->  { x2().set( style.length); y2().set(0.0) }
-                Orientation.TOP ->    { x2().set(0.0); y2().set(-style.length) }
-                Orientation.BOTTOM -> { x2().set(0.0); y2().set( style.length) }
-            }
-        }
+        } as SvgNode
     }
 
     private fun buildTickLabel(
