@@ -29,6 +29,8 @@ interface Theme {
 
     fun annotations(): AnnotationsTheme
 
+    fun comic(): ComicTheme
+
     fun geometries(geomKind: GeomKind): GeomTheme
 
     fun colors(): ColorTheme

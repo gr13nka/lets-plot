@@ -11,11 +11,13 @@ import org.jetbrains.letsPlot.commons.values.Color
 import org.jetbrains.letsPlot.commons.values.Font
 import org.jetbrains.letsPlot.core.plot.base.*
 import org.jetbrains.letsPlot.core.plot.base.geom.annotation.Annotation
+import org.jetbrains.letsPlot.core.plot.base.render.SvgRoot
+import org.jetbrains.letsPlot.core.plot.base.render.primitive.SvgRenderer
+import org.jetbrains.letsPlot.core.plot.base.render.primitive.Renderer
 import org.jetbrains.letsPlot.core.plot.base.theme.DefaultFontFamilyRegistry
 import org.jetbrains.letsPlot.core.plot.base.tooltip.GeomTargetCollector
 import org.jetbrains.letsPlot.core.plot.base.tooltip.NullGeomTargetCollector
 import org.jetbrains.letsPlot.core.plot.builder.presentation.PlotLabelSpec
-
 /**
  * Used in demos only.
  */
@@ -25,6 +27,9 @@ class EmptyGeomContext : GeomContext {
     override val annotation: Annotation? = null
     override val backgroundColor: Color = Color.WHITE
     override val plotContext: PlotContext = NullPlotContext
+
+    override val rendererFactory: (SvgRoot) -> Renderer
+        get() = { root -> SvgRenderer(root) }
 
     override fun getResolution(aes: Aes<Double>): Double {
         throw IllegalStateException("Not available in an empty geom context")
@@ -37,7 +42,6 @@ class EmptyGeomContext : GeomContext {
     override fun withTargetCollector(targetCollector: GeomTargetCollector): GeomContext {
         throw IllegalStateException("Not available in an empty geom context")
     }
-
 
     override fun getDefaultFormatter(aes: Aes<*>): (Any) -> String {
         throw IllegalStateException("Not available in an empty geom context")

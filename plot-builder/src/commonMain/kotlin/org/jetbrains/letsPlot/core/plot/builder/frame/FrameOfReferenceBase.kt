@@ -21,6 +21,7 @@ import org.jetbrains.letsPlot.core.plot.builder.GeomLayer
 import org.jetbrains.letsPlot.core.plot.builder.LayerRendererUtil
 import org.jetbrains.letsPlot.core.plot.builder.SvgLayerRenderer
 import org.jetbrains.letsPlot.core.plot.builder.assemble.GeomContextBuilder
+import org.jetbrains.letsPlot.core.plot.builder.comic.createRendererFactory
 import org.jetbrains.letsPlot.core.plot.builder.layout.GeomMarginsLayout
 import org.jetbrains.letsPlot.core.plot.builder.layout.TileLayoutInfo
 import org.jetbrains.letsPlot.datamodel.svg.dom.SvgRectElement
@@ -61,6 +62,7 @@ internal abstract class FrameOfReferenceBase(
     protected fun buildGeom(layer: GeomLayer, targetCollector: GeomTargetCollector): SvgComponent {
         return buildGeom(
             plotContext,
+            theme,
             layer,  // positional aesthetics are the same as positional data.
             xyAesBounds = adjustedDomain.flipIf(flipAxis), // Data space -> View space
             coord,
@@ -160,6 +162,7 @@ internal abstract class FrameOfReferenceBase(
          */
         internal fun buildGeom(
             plotContext: PlotContext,
+            theme: Theme,
             layer: GeomLayer,
             xyAesBounds: DoubleRectangle,
             coord: CoordinateSystem,
@@ -197,6 +200,8 @@ internal abstract class FrameOfReferenceBase(
                 }
             }
 
+            val rendererFactory = createRendererFactory(theme)
+
             val ctx = GeomContextBuilder()
                 .flipped(flippedAxis)
                 .aesthetics(aesthetics)
@@ -211,6 +216,7 @@ internal abstract class FrameOfReferenceBase(
                 .coordinateSystem(coord)
                 .contentBounds(bounds)
                 .scaleFactor(plotContext.getScaleFactor())
+                .rendererFactory(rendererFactory)
                 .messageConsumer(plotContext.getMessageConsumer())
                 .build()
 

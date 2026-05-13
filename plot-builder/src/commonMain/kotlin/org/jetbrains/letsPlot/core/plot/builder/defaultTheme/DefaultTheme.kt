@@ -23,6 +23,7 @@ class DefaultTheme internal constructor(
     private val plot = DefaultPlotTheme(options, fontFamilyRegistry)
     private val tooltips = DefaultTooltipsTheme(options, fontFamilyRegistry)
     private val annotations = DefaultAnnotationsTheme(options, fontFamilyRegistry)
+    private val comic = DefaultComicTheme(options, fontFamilyRegistry)
     private val geometries: MutableMap<GeomKind, GeomTheme> = HashMap()
     private val colors = DefaultColorTheme(options, fontFamilyRegistry)
 
@@ -54,6 +55,8 @@ class DefaultTheme internal constructor(
     override fun tooltips(): TooltipsTheme = tooltips
 
     override fun annotations(): AnnotationsTheme = annotations
+
+    override fun comic(): ComicTheme = comic
 
     override fun geometries(geomKind: GeomKind): GeomTheme = geometries.getOrPut(geomKind) {
         DefaultGeomTheme.forGeomKind(geomKind, colors)

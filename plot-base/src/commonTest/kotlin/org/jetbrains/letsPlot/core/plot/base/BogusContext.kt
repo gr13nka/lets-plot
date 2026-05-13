@@ -9,6 +9,7 @@ import org.jetbrains.letsPlot.commons.geometry.DoubleRectangle
 import org.jetbrains.letsPlot.commons.geometry.DoubleVector
 import org.jetbrains.letsPlot.commons.values.Color
 import org.jetbrains.letsPlot.core.plot.base.geom.annotation.Annotation
+import org.jetbrains.letsPlot.core.plot.base.render.RendererFactory
 import org.jetbrains.letsPlot.core.plot.base.tooltip.GeomTargetCollector
 
 object BogusContext : GeomContext {
@@ -21,6 +22,8 @@ object BogusContext : GeomContext {
     override val backgroundColor: Color
         get() = error("Not available in a bogus geom context")
     override val plotContext: PlotContext
+        get() = error("Not available in a bogus geom context")
+    override val rendererFactory: RendererFactory
         get() = error("Not available in a bogus geom context")
 
     override fun getResolution(aes: Aes<Double>): Double {

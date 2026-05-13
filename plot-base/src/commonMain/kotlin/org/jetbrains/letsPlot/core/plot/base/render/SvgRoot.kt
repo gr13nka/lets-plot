@@ -5,8 +5,11 @@
 
 package org.jetbrains.letsPlot.core.plot.base.render
 
+import org.jetbrains.letsPlot.core.plot.base.render.primitive.Renderer
 import org.jetbrains.letsPlot.datamodel.svg.dom.SvgNode
 
 interface SvgRoot {
     fun add(node: SvgNode)
 }
+
+typealias RendererFactory = (SvgRoot) -> Renderer
