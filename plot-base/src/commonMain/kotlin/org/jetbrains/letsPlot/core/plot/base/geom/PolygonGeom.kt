@@ -9,6 +9,8 @@ import org.jetbrains.letsPlot.core.plot.base.*
 import org.jetbrains.letsPlot.core.plot.base.geom.util.GeomUtil
 import org.jetbrains.letsPlot.core.plot.base.geom.util.LinesHelper
 import org.jetbrains.letsPlot.core.plot.base.geom.util.TargetCollectorHelper
+import org.jetbrains.letsPlot.core.plot.base.geom.util.fillFor
+import org.jetbrains.letsPlot.core.plot.base.geom.util.strokeFor
 import org.jetbrains.letsPlot.core.plot.base.render.SvgRoot
 
 open class PolygonGeom : GeomBase() {
@@ -30,9 +32,10 @@ open class PolygonGeom : GeomBase() {
 
         val targetCollectorHelper = TargetCollectorHelper(GeomKind.POLYGON, ctx)
 
-        linesHelper.createPolygon(dataPoints, GeomUtil.TO_LOCATION_X_Y).forEach { (svg, polygonData) ->
-            targetCollectorHelper.addPolygons(polygonData)
-            root.add(svg)
+        val renderer = ctx.rendererFactory(root)
+        linesHelper.createPolygonData(dataPoints, GeomUtil.TO_LOCATION_X_Y).forEach { polygon ->
+            targetCollectorHelper.addPolygons(polygon)
+            renderer.drawPolygon(polygon.coordinates, strokeFor(polygon.aes, applyAlpha = false), fillFor(polygon.aes))
         }
     }
 

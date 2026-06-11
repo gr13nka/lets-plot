@@ -11,21 +11,22 @@ import org.jetbrains.letsPlot.commons.intern.typedGeometry.algorithms.AdaptiveRe
 import org.jetbrains.letsPlot.commons.intern.typedGeometry.algorithms.AdaptiveResampler.Companion.resample
 import org.jetbrains.letsPlot.commons.interval.DoubleSpan
 import org.jetbrains.letsPlot.commons.values.Color
-import org.jetbrains.letsPlot.commons.values.Colors
 import org.jetbrains.letsPlot.core.plot.base.*
 import org.jetbrains.letsPlot.core.plot.base.aes.AesScaling
-import org.jetbrains.letsPlot.core.plot.base.aes.AestheticsUtil
 import org.jetbrains.letsPlot.core.plot.base.geom.annotation.PieAnnotation
 import org.jetbrains.letsPlot.core.plot.base.geom.util.GeomHelper
 import org.jetbrains.letsPlot.core.plot.base.geom.util.GeomUtil
 import org.jetbrains.letsPlot.core.plot.base.geom.util.HintColorUtil
+import org.jetbrains.letsPlot.core.plot.base.geom.util.fillFor
 import org.jetbrains.letsPlot.core.plot.base.render.LegendKeyElementFactory
 import org.jetbrains.letsPlot.core.plot.base.render.SvgRoot
-import org.jetbrains.letsPlot.core.plot.base.render.svg.LinePath
+import org.jetbrains.letsPlot.core.plot.base.render.linetype.NamedLineType
+import org.jetbrains.letsPlot.core.plot.base.render.primitive.FillStyle
+import org.jetbrains.letsPlot.core.plot.base.render.primitive.Renderer
+import org.jetbrains.letsPlot.core.plot.base.render.primitive.StrokeStyle
 import org.jetbrains.letsPlot.core.plot.base.tooltip.GeomTargetCollector
 import org.jetbrains.letsPlot.datamodel.svg.dom.SvgCircleElement
 import org.jetbrains.letsPlot.datamodel.svg.dom.SvgGElement
-import org.jetbrains.letsPlot.datamodel.svg.dom.SvgPathDataBuilder
 import kotlin.math.PI
 import kotlin.math.abs
 import kotlin.math.cos
@@ -61,6 +62,7 @@ class PieGeom : GeomBase(), WithWidth, WithHeight {
         ctx: GeomContext
     ) {
         val geomHelper = GeomHelper(pos, coord, ctx)
+        val renderer = ctx.rendererFactory(root)
         GeomUtil.withDefined(aesthetics.dataPoints(), Aes.X, Aes.Y, Aes.SLICE)
             .groupBy { p -> DoubleVector(p.x()!!, p.y()!!) }
             .forEach { (point, dataPoints) ->
@@ -69,12 +71,17 @@ class PieGeom : GeomBase(), WithWidth, WithHeight {
                 val toLocation = { p: DataPointAesthetics -> geomHelper.toClient(point, p) }
                 val pieSectors = computeSectors(dataPoints, toLocation, sizeUnitRatio)
 
-                root.appendNodes(pieSectors.map(::buildSvgSector))
-                root.appendNodes(pieSectors.map(::buildSvgArcs))
-                if (spacerWidth > 0) {
-                    root.appendNodes(
-                        buildSvgSpacerLines(pieSectors, width = spacerWidth, color = spacerColor)
+                // Fills first, then arc strokes on top, preserving the original two-pass z-order.
+                pieSectors.forEach { sector ->
+                    renderer.drawSector(
+                        sector.position, sector.holeRadius, sector.radius,
+                        sector.startAngle, sector.endAngle,
+                        fill = fillStyleFor(sector)
                     )
+                }
+                pieSectors.forEach { sector -> drawArcStrokes(renderer, sector) }
+                if (spacerWidth > 0) {
+                    drawSpacerLines(renderer, pieSectors, width = spacerWidth, color = spacerColor)
                 }
 
                 pieSectors.forEach { buildHint(it, ctx.targetCollector) }
@@ -83,84 +90,28 @@ class PieGeom : GeomBase(), WithWidth, WithHeight {
             }
     }
 
-    private fun SvgPathDataBuilder.svgOuterArc(sector: Sector) {
-        return with(sector) {
-            ellipticalArc(
-                rx = radius,
-                ry = radius,
-                xAxisRotation = 0.0,
-                largeArc = angle > PI,
-                sweep = true,
-                to = outerArcEnd
-            )
+    // Fill convention: keep the color, carry opacity in the alpha channel (fillFor).
+    private fun fillStyleFor(sector: Sector): FillStyle = fillFor(sector.p)
+
+    private fun drawArcStrokes(renderer: Renderer, sector: Sector) {
+        if (sector.strokeWidth <= 0.0) return
+        val stroke = StrokeStyle(
+            color = sector.p.color(),
+            alpha = null,
+            width = sector.strokeWidth,
+            lineType = NamedLineType.SOLID
+        )
+        if (strokeSide.hasOuter) {
+            renderer.drawArc(sector.position, sector.radius, sector.startAngle, sector.endAngle, stroke)
+        }
+        // A zero-radius inner "arc" is invisible in SVG but would collapse to a blob once wobbled.
+        if (strokeSide.hasInner && sector.holeRadius > 0.0) {
+            renderer.drawArc(sector.position, sector.holeRadius, sector.startAngle, sector.endAngle, stroke)
         }
     }
 
-    private fun SvgPathDataBuilder.svgInnerArc(sector: Sector) {
-        return with(sector) {
-            ellipticalArc(
-                rx = holeRadius,
-                ry = holeRadius,
-                xAxisRotation = 0.0,
-                largeArc = angle > PI,
-                sweep = false,
-                to = innerArcStart
-            )
-        }
-    }
-
-    private fun buildSvgSector(sector: Sector): LinePath {
-        return LinePath(
-            SvgPathDataBuilder().apply {
-                moveTo(sector.innerArcStart)
-                lineTo(sector.outerArcStart)
-                svgOuterArc(sector)
-                lineTo(sector.innerArcEnd)
-                svgInnerArc(sector)
-            }
-        ).apply {
-            val fill = sector.p.fill()!!
-            val fillAlpha = AestheticsUtil.alpha(fill, sector.p)
-            fill().set(Colors.withOpacity(fill, fillAlpha))
-        }
-    }
-
-    private fun buildSvgArcs(sector: Sector): LinePath {
-        return LinePath(
-            SvgPathDataBuilder().apply {
-                if (strokeSide.hasOuter) {
-                    moveTo(sector.outerArcStart)
-                    svgOuterArc(sector)
-                }
-                if (strokeSide.hasInner) {
-                    moveTo(sector.innerArcEnd)
-                    svgInnerArc(sector)
-                }
-            }
-        ).apply {
-            width().set(sector.strokeWidth)
-            color().set(sector.p.color())
-        }
-    }
-
-    private fun buildSvgSpacerLines(pieSectors: List<Sector>, width: Double, color: Color): List<LinePath> {
-        fun svgSpacerLines(sector: Sector, atStart: Boolean, atEnd: Boolean): LinePath {
-            return LinePath(
-                SvgPathDataBuilder().apply {
-                    if (atStart) {
-                        moveTo(sector.innerStrokeStartPoint)
-                        lineTo(sector.outerStrokeStartPoint)
-                    }
-                    if (atEnd) {
-                        moveTo(sector.innerStrokeEndPoint)
-                        lineTo(sector.outerStrokeEndPoint)
-                    }
-                }
-            ).apply {
-                width().set(width)
-                color().set(color)
-            }
-        }
+    private fun drawSpacerLines(renderer: Renderer, pieSectors: List<Sector>, width: Double, color: Color) {
+        val stroke = StrokeStyle(color = color, alpha = null, width = width, lineType = NamedLineType.SOLID)
 
         // Do not draw spacer lines for exploded sectors and their neighbors
 
@@ -180,12 +131,13 @@ class PieGeom : GeomBase(), WithWidth, WithHeight {
             else -> index + 1 !in explodedSectors
         }
 
-        return pieSectors.mapIndexed { index, sector ->
-            svgSpacerLines(
-                sector,
-                atStart = needAddAtStart(index),
-                atEnd = needAddAtEnd(index)
-            )
+        pieSectors.forEachIndexed { index, sector ->
+            if (needAddAtStart(index)) {
+                renderer.drawLine(sector.innerStrokeStartPoint, sector.outerStrokeStartPoint, stroke)
+            }
+            if (needAddAtEnd(index)) {
+                renderer.drawLine(sector.innerStrokeEndPoint, sector.outerStrokeEndPoint, stroke)
+            }
         }
     }
 

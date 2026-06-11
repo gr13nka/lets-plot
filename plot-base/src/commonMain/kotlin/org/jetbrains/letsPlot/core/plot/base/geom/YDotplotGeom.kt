@@ -68,6 +68,7 @@ class YDotplotGeom : DotplotGeom(), WithHeight {
         ctx: GeomContext,
         binWidthPx: Double
     ) {
+        val renderer = ctx.rendererFactory(root)
         val dotHelper = DotHelper(pos, coord, ctx)
         val geomHelper = GeomHelper(pos, coord, ctx)
         val fullStackSize = dataPoints.sumOf { it.stacksize()!! }.toInt()
@@ -86,8 +87,7 @@ class YDotplotGeom : DotplotGeom(), WithHeight {
             for (i in 0 until groupStackSize) {
                 dotId = if (stackDotsAcrossGroups()) builtStackSize + i else i
                 val center = getDotCenter(p, dotId, currentStackSize, binWidthPx, ctx.flipped, geomHelper)
-                val path = dotHelper.createDot(p, center, dotSize * binWidthPx / 2)
-                root.add(path.rootGroup)
+                dotHelper.createDot(renderer, p, center, dotSize * binWidthPx / 2)
             }
             buildHint(p, dotId, currentStackSize, ctx, geomHelper, binWidthPx)
             builtStackSize += groupStackSize

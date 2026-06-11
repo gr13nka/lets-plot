@@ -9,6 +9,7 @@ import org.jetbrains.letsPlot.commons.values.FontFace
 import org.jetbrains.letsPlot.core.plot.base.render.text.RichText
 import org.jetbrains.letsPlot.core.plot.base.theme.Theme
 import org.jetbrains.letsPlot.core.plot.base.theme.ThemeTextStyle
+import org.jetbrains.letsPlot.core.plot.builder.comic.ComicStyles
 import org.jetbrains.letsPlot.core.plot.builder.presentation.Defaults.FONT_FAMILY_NORMAL
 import org.jetbrains.letsPlot.datamodel.svg.style.StyleSheet
 import org.jetbrains.letsPlot.datamodel.svg.style.TextStyle
@@ -77,9 +78,15 @@ object Style {
         val vAxisTheme = theme.verticalAxis(flippedAxis)
         val vAxisName = if (flippedAxis) "x" else "y"
 
+        // Comic mode swaps every chrome text class onto the active style's font. Chrome text bypasses
+        // the renderer, so it resolves the same style (via ComicStyles) the geom-text seam uses and
+        // reads its fontFamily once here, not per text class.
+        val comicFontFamily = ComicStyles.resolve(theme.comicEnabled)?.fontFamily
+
         fun ts(themeStyle: ThemeTextStyle): TextStyle {
+            val family = comicFontFamily ?: themeStyle.family.name
             return TextStyle(
-                themeStyle.family.name,
+                family,
                 themeStyle.face,
                 themeStyle.size,
                 themeStyle.color

@@ -51,6 +51,14 @@ internal open class ThemeValuesAccess(
             ?: throw IllegalStateException("Theme value is not boolean: $value. Key : $key.")
     }
 
+    // Tolerant variant: returns `defaultValue` when the option is absent instead of throwing. Used for
+    // options a partial values map may omit (e.g. `comic` in DefaultLegendTheme).
+    protected fun getBoolean(key: List<String>, defaultValue: Boolean): Boolean {
+        val value = key.firstNotNullOfOrNull { values[it] } ?: return defaultValue
+        return (value as? Boolean)
+            ?: throw IllegalStateException("Theme value is not boolean: $value. Key : $key.")
+    }
+
     /**
      * @param key List of option names: the most specific - first.
      */

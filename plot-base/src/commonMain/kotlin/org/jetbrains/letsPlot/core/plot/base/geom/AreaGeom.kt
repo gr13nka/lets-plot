@@ -15,9 +15,10 @@ import org.jetbrains.letsPlot.core.plot.base.geom.util.GeomUtil.TO_LOCATION_X_ZE
 import org.jetbrains.letsPlot.core.plot.base.geom.util.LinesHelper
 import org.jetbrains.letsPlot.core.plot.base.geom.util.QuantilesHelper
 import org.jetbrains.letsPlot.core.plot.base.geom.util.TargetCollectorHelper
+import org.jetbrains.letsPlot.core.plot.base.geom.util.fillFor
+import org.jetbrains.letsPlot.core.plot.base.geom.util.strokeFor
 import org.jetbrains.letsPlot.core.plot.base.render.SvgRoot
 import org.jetbrains.letsPlot.core.plot.base.stat.DensityStat
-import org.jetbrains.letsPlot.datamodel.svg.dom.SvgNode
 
 open class AreaGeom : GeomBase() {
     var quantiles: List<Double> = DensityStat.DEF_QUANTILES
@@ -41,9 +42,7 @@ open class AreaGeom : GeomBase() {
         val helper = LinesHelper(pos, coord, ctx)
         helper.setResamplingEnabled(!coord.isLinear && !flat)
 
-        // Alpha is disabled for strokes (but still applies to fill).
-        helper.setAlphaEnabled(false)
-
+        val renderer = ctx.rendererFactory(root)
         val quantilesHelper = QuantilesHelper(pos, coord, ctx, quantiles)
         val targetCollectorHelper = TargetCollectorHelper(tooltipsGeomKind(), ctx)
 
@@ -52,24 +51,27 @@ open class AreaGeom : GeomBase() {
         dataPoints.sortedByDescending(DataPointAesthetics::group).groupBy(DataPointAesthetics::group)
             .forEach { (_, groupDataPoints) ->
                 quantilesHelper.splitByQuantiles(groupDataPoints, Aes.X).forEach { points ->
-                    val bands = helper.renderBands(
+                    val bands = helper.createBandData(
                         points,
                         TO_LOCATION_X_Y,
                         TO_LOCATION_X_ZERO_WITH_FINITE_Y,
-                        simplifyBorders = false,
                         closePath = closePath
                     )
-                    root.appendNodes(bands)
+                    for (band in bands) {
+                        renderer.drawPath(band.coordinates, stroke = null, fill = fillFor(band.aes), closed = true)
+                    }
 
                     val upperPoints = helper.createPathData(points, TO_LOCATION_X_Y, closePath)
-
-                    val line = helper.renderPaths(upperPoints, filled = false)
-                    root.appendNodes(line)
+                    for (line in upperPoints) {
+                        renderer.drawPath(line.coordinates, strokeFor(line.aes, applyAlpha = false), closed = false)
+                    }
                     targetCollectorHelper.addVariadicPaths(upperPoints)
                 }
 
                 if (quantileLines) {
-                    createQuantileLines(groupDataPoints, quantilesHelper).forEach(root::add)
+                    createQuantileLines(groupDataPoints, quantilesHelper).forEach { (p, geometry) ->
+                        renderer.drawPath(geometry, strokeFor(p, applyAlpha = false), closed = false)
+                    }
                 }
             }
     }
@@ -77,10 +79,10 @@ open class AreaGeom : GeomBase() {
     private fun createQuantileLines(
         dataPoints: Iterable<DataPointAesthetics>,
         quantilesHelper: QuantilesHelper
-    ): List<SvgNode> {
+    ): List<Pair<DataPointAesthetics, List<DoubleVector>>> {
         val toLocationBoundStart: (DataPointAesthetics) -> DoubleVector = { p -> TO_LOCATION_X_Y(p)!! }
         val toLocationBoundEnd: (DataPointAesthetics) -> DoubleVector = { p -> TO_LOCATION_X_ZERO(p)!! }
-        return quantilesHelper.getQuantileLineElements(dataPoints, Aes.X, toLocationBoundStart, toLocationBoundEnd)
+        return quantilesHelper.getQuantileLineSegments(dataPoints, Aes.X, toLocationBoundStart, toLocationBoundEnd)
     }
 
     protected open fun tooltipsGeomKind() = GeomKind.AREA

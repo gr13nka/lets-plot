@@ -13,8 +13,9 @@ import org.jetbrains.letsPlot.core.plot.base.geom.annotation.BarAnnotation
 import org.jetbrains.letsPlot.core.plot.base.geom.util.LinesHelper
 import org.jetbrains.letsPlot.core.plot.base.geom.util.RectangleTooltipHelper
 import org.jetbrains.letsPlot.core.plot.base.geom.util.RectanglesHelper
+import org.jetbrains.letsPlot.core.plot.base.geom.util.fillFor
+import org.jetbrains.letsPlot.core.plot.base.geom.util.strokeFor
 import org.jetbrains.letsPlot.core.plot.base.render.SvgRoot
-import org.jetbrains.letsPlot.datamodel.svg.dom.SvgNode
 
 open class BarGeom : GeomBase() {
 
@@ -28,33 +29,37 @@ open class BarGeom : GeomBase() {
         ctx: GeomContext
     ) {
         val binSpan = getBinSpanCalculator(ctx)
+        val renderer = ctx.rendererFactory(root)
         val helper = RectanglesHelper(aesthetics, pos, coord, ctx, visualRectByDataPoint(binSpan))
         val tooltipHelper = RectangleTooltipHelper(pos, coord, ctx)
-        val rectangles = mutableListOf<SvgNode>()
         if (coord.isLinear) {
-            helper.createRectangles { _, svgNode, _ -> rectangles.add(svgNode) }
+            val rectangles = mutableListOf<Pair<DataPointAesthetics, DoubleRectangle>>()
+            helper.createRectangles { aes, rect -> rectangles.add(aes to rect) }
+            rectangles.reverse()
+            rectangles.forEach { (aes, rect) -> renderer.drawRect(rect, strokeFor(aes, applyAlpha = false), fillFor(aes)) }
 
             // Snap tooltips to the proper side (e.g. bottom for negative values, right for coord_flip)
             val hintHelper = RectanglesHelper(aesthetics, pos, coord, ctx, hintRectByDataPoint(binSpan))
-            hintHelper.createRectangles { aes, _, rect -> tooltipHelper.addTarget(aes, rect) }
+            hintHelper.createRectangles { aes, rect -> tooltipHelper.addTarget(aes, rect) }
         } else {
-            helper.createNonLinearRectangles { aes, svgNode, polygon ->
-                rectangles.add(svgNode)
+            val polygons = mutableListOf<Pair<DataPointAesthetics, List<DoubleVector>>>()
+            helper.createNonLinearRectangles { aes, polygon ->
+                polygons.add(aes to polygon)
                 tooltipHelper.addTarget(aes, polygon)
             }
+            polygons.reverse()
+            polygons.forEach { (aes, polygon) -> renderer.drawPath(polygon, strokeFor(aes, applyAlpha = false), fillFor(aes), closed = true) }
         }
-        rectangles.reverse() // TODO: why reverse?
-        rectangles.forEach(root::add)
 
         ctx.annotation?.let {
             val dataPoints = aesthetics.dataPoints()
             val linesHelper = LinesHelper(pos, coord, ctx)
             linesHelper.setResamplingEnabled(!coord.isLinear)
-            val polygons = linesHelper.createRectPolygon(dataPoints, polygonByDataPoint(binSpan))
+            val polygons = linesHelper.createRectPolygonData(dataPoints, polygonByDataPoint(binSpan))
 
             BarAnnotation.build(
                 root,
-                polygons.map { (_, polygonData) -> polygonData },
+                polygons,
                 { p -> rectByDataPoint(p, binSpan) },
                 linesHelper,
                 coord,

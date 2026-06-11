@@ -6,6 +6,7 @@
 package org.jetbrains.letsPlot.core.plot.base.geom
 
 import org.jetbrains.letsPlot.commons.geometry.DoubleRectangle
+import org.jetbrains.letsPlot.commons.geometry.DoubleSegment
 import org.jetbrains.letsPlot.commons.geometry.DoubleVector
 import org.jetbrains.letsPlot.commons.interval.DoubleSpan
 import org.jetbrains.letsPlot.core.plot.base.*
@@ -14,8 +15,10 @@ import org.jetbrains.letsPlot.core.plot.base.geom.util.BoxHelper
 import org.jetbrains.letsPlot.core.plot.base.geom.util.GeomHelper
 import org.jetbrains.letsPlot.core.plot.base.geom.util.GeomUtil.extendHeight
 import org.jetbrains.letsPlot.core.plot.base.geom.util.HintColorUtil.colorWithAlpha
+import org.jetbrains.letsPlot.core.plot.base.geom.util.strokeFor
 import org.jetbrains.letsPlot.core.plot.base.render.LegendKeyElementFactory
 import org.jetbrains.letsPlot.core.plot.base.render.SvgRoot
+import org.jetbrains.letsPlot.core.plot.base.render.primitive.Renderer
 import org.jetbrains.letsPlot.core.plot.base.tooltip.TipLayoutHint
 
 class BoxplotGeom : GeomBase(), WithWidth {
@@ -35,11 +38,12 @@ class BoxplotGeom : GeomBase(), WithWidth {
         ctx: GeomContext
     ) {
         val geomHelper = GeomHelper(pos, coord, ctx)
+        val renderer = ctx.rendererFactory(root)
         BoxHelper.buildBoxes(
-            root, aesthetics, pos, coord, ctx,
+            renderer, aesthetics,
             clientRectByDataPoint(ctx, geomHelper, widthUnit, isHintRect = false)
         )
-        buildLines(root, aesthetics, geomHelper)
+        buildLines(renderer, aesthetics, geomHelper)
         BarTooltipHelper.collectRectangleTargets(
             listOf(Aes.YMAX, Aes.UPPER, Aes.MIDDLE, Aes.LOWER, Aes.YMIN),
             aesthetics, pos, coord, ctx,
@@ -59,22 +63,18 @@ class BoxplotGeom : GeomBase(), WithWidth {
     }
 
     private fun buildLines(
-        root: SvgRoot,
+        renderer: Renderer,
         aesthetics: Aesthetics,
         geomHelper: GeomHelper
     ) {
-        BoxHelper.buildMidlines(
-            root,
-            aesthetics,
-            xAes = Aes.X,
-            middleAes = Aes.MIDDLE,
-            sizeAes = Aes.WIDTH,
-            widthUnit = widthUnit,
-            geomHelper,
-            fatten = fattenMidline
-        )
+        BoxHelper.buildMidlines(renderer, aesthetics, fatten = fattenMidline, geomHelper, midlineByDataPoint(geomHelper))
 
         val elementHelper = geomHelper.createSvgElementHelper()
+
+        fun drawLine(start: DoubleVector, end: DoubleVector, p: DataPointAesthetics) {
+            elementHelper.createLineGeometry(start, end, p)?.let { renderer.drawPath(it, strokeFor(p, applyAlpha = false), closed = false) }
+        }
+
         for (p in aesthetics.dataPoints()) {
             val x = p.finiteOrNull(Aes.X) ?: continue
             val w = p.finiteOrNull(Aes.WIDTH) ?: 0.0
@@ -82,46 +82,26 @@ class BoxplotGeom : GeomBase(), WithWidth {
             val halfWidth = w * geomHelper.getUnitResolution(widthUnit, Aes.X) / 2
             val halfFenceWidth = halfWidth * whiskerWidth
 
-            // lower whisker
             p.finiteOrNull(Aes.LOWER, Aes.YMIN)?.let { (hinge, fence) ->
-                // whisker line
-                root.add(
-                    elementHelper.createLine(
-                        DoubleVector(x, hinge),
-                        DoubleVector(x, fence),
-                        p
-                    )!!.first
-                )
-                // fence line
-                root.add(
-                    elementHelper.createLine(
-                        DoubleVector(x - halfFenceWidth, fence),
-                        DoubleVector(x + halfFenceWidth, fence),
-                        p
-                    )!!.first
-                )
+                drawLine(DoubleVector(x, hinge), DoubleVector(x, fence), p)
+                drawLine(DoubleVector(x - halfFenceWidth, fence), DoubleVector(x + halfFenceWidth, fence), p)
             }
-
-            // upper whisker
             p.finiteOrNull(Aes.UPPER, Aes.YMAX)?.let { (hinge, fence) ->
-                // whisker line
-                root.add(
-                    elementHelper.createLine(
-                        DoubleVector(x, hinge),
-                        DoubleVector(x, fence),
-                        p
-                    )!!.first
-                )
-                // fence line
-                root.add(
-                    elementHelper.createLine(
-                        DoubleVector(x - halfFenceWidth, fence),
-                        DoubleVector(x + halfFenceWidth, fence),
-                        p
-                    )!!.first
-                )
+                drawLine(DoubleVector(x, hinge), DoubleVector(x, fence), p)
+                drawLine(DoubleVector(x - halfFenceWidth, fence), DoubleVector(x + halfFenceWidth, fence), p)
             }
         }
+    }
+
+    private fun midlineByDataPoint(geomHelper: GeomHelper): (DataPointAesthetics) -> DoubleSegment? {
+        fun factory(p: DataPointAesthetics): DoubleSegment? {
+            val x = p.finiteOrNull(Aes.X) ?: return null
+            val middle = p.finiteOrNull(Aes.MIDDLE) ?: return null
+            val w = p.finiteOrNull(Aes.WIDTH) ?: return null
+            val width = w * geomHelper.getUnitResolution(widthUnit, Aes.X)
+            return DoubleSegment(DoubleVector(x - width / 2, middle), DoubleVector(x + width / 2, middle))
+        }
+        return ::factory
     }
 
     companion object {

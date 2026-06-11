@@ -14,6 +14,8 @@ import org.jetbrains.letsPlot.core.plot.base.geom.DimensionUnit.PIXEL
 import org.jetbrains.letsPlot.core.plot.base.geom.DimensionUnit.RESOLUTION
 import org.jetbrains.letsPlot.core.plot.base.geom.DimensionUnit.SIZE
 import org.jetbrains.letsPlot.core.plot.base.geom.util.HexagonsHelper
+import org.jetbrains.letsPlot.core.plot.base.geom.util.fillFor
+import org.jetbrains.letsPlot.core.plot.base.geom.util.strokeFor
 import org.jetbrains.letsPlot.core.plot.base.render.SvgRoot
 import kotlin.math.sqrt
 
@@ -30,10 +32,12 @@ class HexGeom : GeomBase(), WithWidth, WithHeight {
     ) {
         val transformWidthToUnits: (Double) -> Double = { w -> w * getUnitResolution(widthUnit, Aes.X, coord, ctx) }
         val transformHeightToUnits: (Double) -> Double = { h -> h * getUnitResolution(heightUnit, Aes.Y, coord, ctx) }
+        val renderer = ctx.rendererFactory(root)
         val helper = HexagonsHelper(aesthetics, pos, coord, ctx, clientHexByDataPoint(transformWidthToUnits, transformHeightToUnits))
         helper.setResamplingEnabled(!coord.isLinear)
-        helper.createHexagons().forEach { hexLinePath ->
-            root.add(hexLinePath.rootGroup)
+        // A hexagon is a filled, opaque-bordered polygon (the legacy decorate(filled = true)).
+        helper.createHexagonData().forEach { (p, hex) ->
+            renderer.drawPath(hex, stroke = strokeFor(p, applyAlpha = false), fill = fillFor(p), closed = true)
         }
     }
 

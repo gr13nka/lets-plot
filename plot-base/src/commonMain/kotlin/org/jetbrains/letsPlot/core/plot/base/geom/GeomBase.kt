@@ -12,7 +12,6 @@ import org.jetbrains.letsPlot.core.plot.base.geom.legend.GenericLegendKeyElement
 import org.jetbrains.letsPlot.core.plot.base.tooltip.GeomTargetCollector
 import org.jetbrains.letsPlot.core.plot.base.render.LegendKeyElementFactory
 import org.jetbrains.letsPlot.core.plot.base.render.SvgRoot
-import org.jetbrains.letsPlot.core.plot.base.render.svg.LinePath
 import org.jetbrains.letsPlot.datamodel.svg.dom.SvgGElement
 import org.jetbrains.letsPlot.datamodel.svg.dom.slim.SvgSlimElements
 import org.jetbrains.letsPlot.datamodel.svg.dom.slim.SvgSlimGroup
@@ -105,10 +104,5 @@ abstract class GeomBase : Geom {
             )
         }
 
-        fun SvgRoot.appendNodes(paths: List<LinePath>) {
-            for (path in paths) {
-                add(path.rootGroup)
-            }
-        }
     }
 }

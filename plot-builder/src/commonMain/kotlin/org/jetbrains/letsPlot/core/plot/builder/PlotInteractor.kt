@@ -61,6 +61,7 @@ internal class PlotInteractor(
             theme.plot().backgroundFill(),
             styleSheet,
             plotContext,
+            theme.comicEnabled,
             mouseEventPeer
         )
         reg.add(Registration.from(tooltipRenderer))

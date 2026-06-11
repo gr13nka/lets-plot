@@ -11,10 +11,10 @@ import org.jetbrains.letsPlot.commons.intern.typedGeometry.algorithms.AdaptiveRe
 import org.jetbrains.letsPlot.commons.intern.typedGeometry.algorithms.AdaptiveResampler.Companion.resample
 import org.jetbrains.letsPlot.core.commons.geometry.PolylineSimplifier
 import org.jetbrains.letsPlot.core.plot.base.*
+import org.jetbrains.letsPlot.core.plot.base.render.primitive.Renderer
 import org.jetbrains.letsPlot.core.plot.base.render.svg.lineString
 import org.jetbrains.letsPlot.datamodel.svg.dom.SvgNode
 import org.jetbrains.letsPlot.datamodel.svg.dom.SvgPathDataBuilder
-import org.jetbrains.letsPlot.datamodel.svg.dom.SvgPathElement
 import org.jetbrains.letsPlot.datamodel.svg.dom.SvgRectElement
 import org.jetbrains.letsPlot.datamodel.svg.dom.slim.SvgSlimElements
 import org.jetbrains.letsPlot.datamodel.svg.dom.slim.SvgSlimGroup
@@ -27,7 +27,7 @@ class RectanglesHelper(
     private val geometryFactory: (DataPointAesthetics) -> DoubleRectangle?
 ) : GeomHelper(pos, coord, ctx) {
     // TODO: Replace with SvgRectHelper
-    fun createNonLinearRectangles(handler: (DataPointAesthetics, SvgNode, List<DoubleVector>) -> Unit) {
+    fun createNonLinearRectangles(handler: (DataPointAesthetics, List<DoubleVector>) -> Unit) {
         myAesthetics.dataPoints().forEach { p ->
             geometryFactory(p)?.let { rect ->
                 val polyRect = resample(
@@ -41,22 +41,16 @@ class RectanglesHelper(
                     )
                 ) { toClient(it, p) }
 
-                val svgPoly = SvgPathElement()
-                svgPoly.d().set(SvgPathDataBuilder().lineString(polyRect).build())
-
-                decorate(svgPoly, p)
-                handler(p, svgPoly, polyRect)
+                handler(p, polyRect)
             }
         }
     }
 
-    fun createRectangles(handler: (DataPointAesthetics, SvgNode, DoubleRectangle) -> Unit) {
+    fun createRectangles(handler: (DataPointAesthetics, DoubleRectangle) -> Unit) {
         myAesthetics.dataPoints().forEach { p ->
             geometryFactory(p)?.let { rect ->
                 val clientRect = toClient(rect, p) ?: return@let
-                val svgRect = SvgRectElement(clientRect)
-                decorate(svgRect, p)
-                handler(p, svgRect, clientRect)
+                handler(p, clientRect)
             }
         }
     }
@@ -96,6 +90,44 @@ class RectanglesHelper(
 
         fun onGeometry(handler: (DataPointAesthetics, DoubleRectangle?, List<DoubleVector>?) -> Unit) {
             onGeometry = handler
+        }
+
+        fun drawRectangles(renderer: Renderer) {
+            val pointCount = myAesthetics.dataPointCount()
+            for (index in 0 until pointCount) {
+                val p = myAesthetics.dataPointAt(index)
+                val rect = geometryFactory(p) ?: continue
+
+                if (myResamplingEnabled) {
+                    val polyRect = resample(
+                        precision = myResamplingPrecision,
+                        points = listOf(
+                            DoubleVector(rect.left, rect.top),
+                            DoubleVector(rect.right, rect.top),
+                            DoubleVector(rect.right, rect.bottom),
+                            DoubleVector(rect.left, rect.bottom),
+                            DoubleVector(rect.left, rect.top)
+                        )
+                    ) { toClient(it, p) }
+
+                    // Resampling of a tiny rectangle still can produce a very small polygon - simplify it.
+                    val simplified = PolylineSimplifier.douglasPeucker(polyRect).setWeightLimit(PolylineSimplifier.DOUGLAS_PEUCKER_PIXEL_THRESHOLD).points.let {
+                        if (it.size != 1) {
+                            println("RectanglesHelper: expected a single path, but got ${it.size}")
+                        }
+
+                        it.firstOrNull() ?: emptyList()
+                    }
+
+                    onGeometry(p, null, simplified)
+                    renderer.drawPath(simplified, strokeFor(p, applyAlpha = false), fillFor(p), closed = true)
+                } else {
+                    val clientRect = toClient(rect, p) ?: continue
+
+                    onGeometry(p, clientRect, null)
+                    renderer.drawRect(clientRect, strokeFor(p, applyAlpha = false), fillFor(p))
+                }
+            }
         }
 
         fun createSlimRectangles(): SvgSlimGroup {

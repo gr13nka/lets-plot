@@ -8,6 +8,7 @@ package org.jetbrains.letsPlot.core.plot.builder.defaultTheme.values
 object ThemeOption {
     // System
     const val EXPONENT_FORMAT = "exponent_format"
+    const val COMIC = "comic"
 
     // Common
     const val TITLE = "title"

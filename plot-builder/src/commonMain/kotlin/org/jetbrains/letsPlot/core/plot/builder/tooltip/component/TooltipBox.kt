@@ -12,6 +12,7 @@ import org.jetbrains.letsPlot.commons.values.Color
 import org.jetbrains.letsPlot.core.plot.base.render.linetype.LineType
 import org.jetbrains.letsPlot.core.plot.base.render.svg.*
 import org.jetbrains.letsPlot.core.plot.base.tooltip.TooltipSpec
+import org.jetbrains.letsPlot.core.plot.builder.comic.ComicStylize
 import org.jetbrains.letsPlot.core.plot.builder.presentation.Defaults.Common.Tooltip.COLOR_BAR_STROKE_WIDTH
 import org.jetbrains.letsPlot.core.plot.builder.presentation.Defaults.Common.Tooltip.COLOR_BAR_WIDTH
 import org.jetbrains.letsPlot.core.plot.builder.presentation.Defaults.Common.Tooltip.CONTENT_EXTENDED_PADDING
@@ -37,7 +38,9 @@ import kotlin.math.max
 import kotlin.math.min
 
 class TooltipBox(
-    private val styleSheet: StyleSheet
+    private val styleSheet: StyleSheet,
+    // Non-null in comic mode: wobbles the box outline
+    private val comicStylize: ComicStylize? = null
 ) : SvgComponent() {
     enum class Orientation {
         VERTICAL,
@@ -194,7 +197,13 @@ class TooltipBox(
             val horFootingIndent = calculatePointerFootingIndent(contentRect.width)
 
             myPointerPath.d().set(
-                SvgPathDataBuilder().apply {
+                if (comicStylize != null) {
+                    // Wobble the outline into a cardinal-smoothed closed path.
+                    SvgPathDataBuilder()
+                        .cardinalString(comicStylize.apply(pointerOutline(pointerCoord, vertFootingIndent, horFootingIndent)))
+                        .closePath()
+                        .build()
+                } else SvgPathDataBuilder().apply {
                     with(contentRect) {
 
                         fun lineToIf(p: DoubleVector, isTrue: Boolean) {
@@ -274,6 +283,39 @@ class TooltipBox(
         private fun calculatePointerFootingIndent(sideLength: Double): Double {
             val footingLength = min(sideLength * POINTER_FOOTING_TO_SIDE_LENGTH_RATIO, MAX_POINTER_FOOTING_LENGTH)
             return (sideLength - footingLength) / 2
+        }
+
+        // The box outline + pointer as a vertex list (sharp corners), in the same traversal order as the
+        // crisp builder above. Feeds the comic wobble, the pointer tip is included only on the side the
+        // pointer faces.
+        private fun pointerOutline(
+            pointerCoord: DoubleVector,
+            vertFootingIndent: Double,
+            horFootingIndent: Double
+        ): List<DoubleVector> {
+            val points = ArrayList<DoubleVector>()
+            with(contentRect) {
+                fun addIf(p: DoubleVector, isTrue: Boolean) {
+                    if (isTrue) points.add(p)
+                }
+                points.add(DoubleVector(right, bottom))
+                points.add(DoubleVector(right, bottom + vertFootingIndent))
+                addIf(pointerCoord, pointerDirection == RIGHT)
+                points.add(DoubleVector(right, top - vertFootingIndent))
+                points.add(DoubleVector(right, top))
+                points.add(DoubleVector(right - horFootingIndent, top))
+                addIf(pointerCoord, pointerDirection == UP)
+                points.add(DoubleVector(left + horFootingIndent, top))
+                points.add(DoubleVector(left, top))
+                points.add(DoubleVector(left, top - vertFootingIndent))
+                addIf(pointerCoord, pointerDirection == LEFT)
+                points.add(DoubleVector(left, bottom + vertFootingIndent))
+                points.add(DoubleVector(left, bottom))
+                points.add(DoubleVector(left + horFootingIndent, bottom))
+                addIf(pointerCoord, pointerDirection == DOWN)
+                points.add(DoubleVector(right - horFootingIndent, bottom))
+            }
+            return points
         }
 
         private fun trianglePointer(pointerCoord: DoubleVector) = SvgPathDataBuilder().apply {

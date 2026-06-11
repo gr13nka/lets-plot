@@ -11,6 +11,8 @@ import org.jetbrains.letsPlot.core.plot.base.*
 import org.jetbrains.letsPlot.core.plot.base.geom.util.GeomHelper
 import org.jetbrains.letsPlot.core.plot.base.geom.util.HintColorUtil
 import org.jetbrains.letsPlot.core.plot.base.geom.util.HintsCollection
+import org.jetbrains.letsPlot.core.plot.base.geom.util.fillFor
+import org.jetbrains.letsPlot.core.plot.base.geom.util.strokeFor
 import org.jetbrains.letsPlot.core.plot.base.render.SvgRoot
 import org.jetbrains.letsPlot.core.plot.base.tooltip.GeomTargetCollector
 
@@ -32,6 +34,7 @@ class BandGeom(private val isVertical: Boolean) : GeomBase() {
         ctx: GeomContext
     ) {
         val geomHelper = GeomHelper(pos, coord, ctx)
+        val renderer = ctx.rendererFactory(root)
         val svgHelper = GeomHelper(pos, coord, ctx).createSvgElementHelper()
             .setResamplingEnabled(!coord.isLinear)
 
@@ -44,14 +47,17 @@ class BandGeom(private val isVertical: Boolean) : GeomBase() {
             val rect = DoubleRectangle.hvRange(viewPort.xRange(), DoubleSpan(yMin, yMax))
             val (topSide, _, _, bottomSide) = rect.parts.toList()
 
-            // strokeScaler = { 0.0 } to avoid rendering stroke
-            val (rectSvg, _) = svgHelper.createRectangle(rect.flipIf(!isVertical), p, strokeScaler = { 0.0 }) ?: continue
-            val (topSvg, _) = svgHelper.createLine(topSide.flipIf(!isVertical), p) ?: continue
-            val (bottomSvg, _) = svgHelper.createLine(bottomSide.flipIf(!isVertical), p) ?: continue
-
-            root.add(rectSvg)
-            root.add(topSvg)
-            root.add(bottomSvg)
+            svgHelper.createLineGeometry(rect.flipIf(!isVertical).points, p)?.let { ring ->
+                renderer.drawPath(ring, stroke = null, fill = fillFor(p), closed = true)
+            }
+            val topSeg = topSide.flipIf(!isVertical)
+            svgHelper.createLineGeometry(topSeg.start, topSeg.end, p)?.let { line ->
+                renderer.drawPath(line, strokeFor(p, applyAlpha = false), closed = false)
+            }
+            val bottomSeg = bottomSide.flipIf(!isVertical)
+            svgHelper.createLineGeometry(bottomSeg.start, bottomSeg.end, p)?.let { line ->
+                renderer.drawPath(line, strokeFor(p, applyAlpha = false), closed = false)
+            }
 
             // tooltip
             val tooltipParams = GeomTargetCollector.TooltipParams(

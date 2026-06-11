@@ -29,6 +29,8 @@ import org.jetbrains.letsPlot.core.plot.base.tooltip.layout.LayoutManager.Horizo
 import org.jetbrains.letsPlot.core.plot.base.tooltip.layout.LayoutManager.MeasuredTooltip
 import org.jetbrains.letsPlot.core.plot.base.tooltip.loc.LocatedTargetsPicker
 import org.jetbrains.letsPlot.core.plot.base.tooltip.loc.TransformedTargetLocator
+import org.jetbrains.letsPlot.core.plot.builder.comic.ComicStylize
+import org.jetbrains.letsPlot.core.plot.builder.comic.ComicStyles
 import org.jetbrains.letsPlot.core.plot.builder.presentation.Defaults.Common.Tooltip.BORDER_RADIUS
 import org.jetbrains.letsPlot.core.plot.builder.presentation.Defaults.Common.Tooltip.DARK_TEXT_COLOR
 import org.jetbrains.letsPlot.core.plot.builder.presentation.Defaults.Common.Tooltip.LIGHT_TEXT_COLOR
@@ -55,6 +57,7 @@ internal class TooltipRenderer(
     private val plotBackground: Color,
     private val styleSheet: StyleSheet,
     private val plotContext: PlotContext,
+    comicEnabled: Boolean,
     mouseEventPeer: MouseEventPeer
 ) : Disposable {
     private val regs = CompositeRegistration()
@@ -68,6 +71,9 @@ internal class TooltipRenderer(
     private var pinned = false
 
     init {
+        // Resolved through the same ComicStyles path the geoms and legends use, null = crisp
+        val comicStylize: ComicStylize? = ComicStyles.resolve(comicEnabled)
+
         val viewport = DoubleRectangle(DoubleVector.ZERO, plotSize)
         myLayoutManager = LayoutManager(viewport, HorizontalAlignment.LEFT, MARGIN_BETWEEN_TOOLTIPS)
         measuringTooltipBox = TooltipBox(styleSheet).apply {
@@ -82,7 +88,7 @@ internal class TooltipRenderer(
             parent = SvgGElement().also { myTooltipLayer.children().add(it) }
         )
         tooltipStorage = RetainableComponents(
-            itemFactory = { TooltipBox(styleSheet) },
+            itemFactory = { TooltipBox(styleSheet, comicStylize) },
             parent = SvgGElement().also { myTooltipLayer.children().add(it) }
         )
 

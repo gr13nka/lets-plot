@@ -15,6 +15,7 @@ import org.jetbrains.letsPlot.core.plot.base.geom.util.GeomUtil
 import org.jetbrains.letsPlot.core.plot.base.geom.util.GeomUtil.toLocation
 import org.jetbrains.letsPlot.core.plot.base.geom.util.HintColorUtil
 import org.jetbrains.letsPlot.core.plot.base.geom.util.RectangleTooltipHelper
+import org.jetbrains.letsPlot.core.plot.base.geom.util.strokeFor
 import org.jetbrains.letsPlot.core.plot.base.render.LegendKeyElementFactory
 import org.jetbrains.letsPlot.core.plot.base.render.SvgRoot
 import org.jetbrains.letsPlot.datamodel.svg.dom.SvgRectElement
@@ -33,6 +34,7 @@ class LineRangeGeom : GeomBase() {
         ctx: GeomContext
     ) {
         val geomHelper = GeomHelper(pos, coord, ctx)
+        val renderer = ctx.rendererFactory(root)
         val helper = geomHelper.createSvgElementHelper()
         helper.setStrokeAlphaEnabled(true)
         val colorsByDataPoint = HintColorUtil.createColorMarkerMapper(GeomKind.LINE_RANGE, ctx)
@@ -48,7 +50,8 @@ class LineRangeGeom : GeomBase() {
             val start = p.toLocation(Aes.X, Aes.YMIN) ?: continue
             val end = p.toLocation(Aes.X, Aes.YMAX) ?: continue
 
-            helper.createLine(start, end, p)?.let { (svgElement, _) -> root.add(svgElement) }
+            val linestring = helper.createLineGeometry(start, end, p) ?: continue
+            renderer.drawPath(linestring, strokeFor(p), closed = false)
         }
         // tooltip
         /*

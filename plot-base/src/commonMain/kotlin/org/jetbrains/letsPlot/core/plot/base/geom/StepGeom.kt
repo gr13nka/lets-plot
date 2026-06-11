@@ -12,6 +12,7 @@ import org.jetbrains.letsPlot.core.plot.base.*
 import org.jetbrains.letsPlot.core.plot.base.geom.util.GeomUtil
 import org.jetbrains.letsPlot.core.plot.base.geom.util.LinesHelper
 import org.jetbrains.letsPlot.core.plot.base.geom.util.TargetCollectorHelper
+import org.jetbrains.letsPlot.core.plot.base.geom.util.strokeFor
 import org.jetbrains.letsPlot.core.plot.base.render.SvgRoot
 
 class StepGeom : LineGeom() {
@@ -48,9 +49,12 @@ class StepGeom : LineGeom() {
             ctx.flipped && myDirection == Direction.VH -> true
             else -> false
         }
-        val linePaths = linesHelper.createSteps(pathDataList, horizontalThenVertical)
+        val stepsPaths = linesHelper.createSteps(pathDataList, horizontalThenVertical)
 
-        root.appendNodes(linePaths)
+        val renderer = ctx.rendererFactory(root)
+        for (path in stepsPaths) {
+            renderer.drawPath(path.coordinates, strokeFor(path.aes), closed = false)
+        }
 
         val targetCollectorHelper = TargetCollectorHelper(GeomKind.STEP, ctx)
         targetCollectorHelper.addPaths(pathDataList)

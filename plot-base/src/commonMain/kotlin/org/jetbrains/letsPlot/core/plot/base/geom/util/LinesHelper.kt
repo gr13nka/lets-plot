@@ -10,16 +10,9 @@ import org.jetbrains.letsPlot.commons.intern.splitBy
 import org.jetbrains.letsPlot.commons.intern.typedGeometry.algorithms.*
 import org.jetbrains.letsPlot.commons.intern.typedGeometry.algorithms.AdaptiveResampler.Companion.PIXEL_PRECISION
 import org.jetbrains.letsPlot.commons.intern.util.VectorAdapter
-import org.jetbrains.letsPlot.commons.values.Colors.withOpacity
-import org.jetbrains.letsPlot.core.commons.geometry.PolylineSimplifier.Companion.DOUGLAS_PEUCKER_PIXEL_THRESHOLD
-import org.jetbrains.letsPlot.core.commons.geometry.PolylineSimplifier.Companion.douglasPeucker
 import org.jetbrains.letsPlot.core.plot.base.*
-import org.jetbrains.letsPlot.core.plot.base.aes.AesScaling
-import org.jetbrains.letsPlot.core.plot.base.aes.AestheticsUtil
 import org.jetbrains.letsPlot.core.plot.base.geom.util.GeomUtil.createPathDataFromRectangle
 import org.jetbrains.letsPlot.core.plot.base.geom.util.GeomUtil.createPaths
-import org.jetbrains.letsPlot.core.plot.base.render.svg.LinePath
-import org.jetbrains.letsPlot.datamodel.svg.dom.SvgNode
 
 open class LinesHelper(
     pos: PositionAdjustment,
@@ -28,17 +21,12 @@ open class LinesHelper(
     private val counter: (Int) -> Unit = {} // todo: remove default counter
 ) : GeomHelper(pos, coord, ctx) {
 
-    private var myAlphaEnabled = true
     protected var myResamplingEnabled = false
     protected var myResamplingPrecision = PIXEL_PRECISION
 
     // Polar coordinate system with discrete X scale.
     fun meetsRadarPlotReq(): Boolean {
         return coord.isPolar && ctx.plotContext.hasScale(Aes.X) && !ctx.plotContext.getScale(Aes.X).isContinuous
-    }
-
-    fun setAlphaEnabled(b: Boolean) {
-        this.myAlphaEnabled = b
     }
 
     fun setResamplingEnabled(resample: Boolean) {
@@ -48,32 +36,6 @@ open class LinesHelper(
     // for test only
     internal fun setResamplingPrecision(precision: Double) {
        this.myResamplingPrecision = precision
-    }
-
-    fun createLines(
-        dataPoints: Iterable<DataPointAesthetics>,
-        toLocation: (DataPointAesthetics) -> DoubleVector?
-    ): List<LinePath> {
-        val paths = createPaths(dataPoints, toLocation)
-        return renderPaths(paths, filled = false)
-    }
-
-    // TODO: filled parameter is always false
-    fun renderPaths(paths: Collection<PathData>, filled: Boolean): List<LinePath> {
-        return paths.map { path ->
-            val visualPath = when (myResamplingEnabled) {
-                true -> douglasPeucker(path.coordinates, DOUGLAS_PEUCKER_PIXEL_THRESHOLD)
-                false -> path.coordinates
-            }
-
-            val element = when (filled) {
-                true -> LinePath.polygon(visualPath)
-                false -> LinePath.line(visualPath)
-            }
-
-            decorate(element, path.aes, filled)
-            element
-        }
     }
 
     fun createPathData(
@@ -87,47 +49,38 @@ open class LinesHelper(
         return toClientPaths(domainData)
     }
 
-    fun createPolygon(
+    // Client-space polygons (rings) for the Renderer, the polygon analog of createPathData.
+    fun createPolygonData(
         dataPoints: Iterable<DataPointAesthetics>,
         locationTransform: (DataPointAesthetics) -> DoubleVector? = GeomUtil.TO_LOCATION_X_Y,
-    ): List<Pair<SvgNode, PolygonData>> {
+    ): List<PolygonData> {
         val domainPathData = createPaths(dataPoints, locationTransform, sorted = true, closePath = false, nullsCounter = counter)
 
-        return createPolygon(domainPathData)
+        return toClientPolygons(domainPathData)
     }
 
-    fun createRectPolygon(
+    // The rect-polygon analog of createPolygonData: one polygon per data point, from a
+    // multi-point transform
+    fun createRectPolygonData(
         dataPoints: Iterable<DataPointAesthetics>,
         locationTransform: (DataPointAesthetics) -> List<DoubleVector>?,
-    ): List<Pair<SvgNode, PolygonData>> {
+    ): List<PolygonData> {
         val domainPathData = createPathDataFromRectangle(dataPoints, locationTransform)
 
-        return createPolygon(domainPathData)
+        return toClientPolygons(domainPathData)
     }
 
-    private fun createPolygon(domainPathData: Collection<PathData>): List<Pair<SvgNode, PolygonData>> {
+    private fun toClientPolygons(domainPathData: Collection<PathData>): List<PolygonData> {
         // split in domain space! after resampling coordinates may repeat and splitRings will return wrong results
         val domainPolygonData = domainPathData
             .map { splitRings(it.points, PathPoint.LOC_EQ) }
             .mapNotNull { PolygonData.create(it) }
 
-        val clientPolygonData = domainPolygonData.mapNotNull { polygon ->
+        return domainPolygonData.mapNotNull { polygon ->
             polygon.rings
                 .map { if (myResamplingEnabled) resample(it) else toClient(it) }
                 .let { PolygonData.create(it) }
         }
-
-        val svg = clientPolygonData.map { polygon ->
-            val element = polygon.coordinates
-                .map { douglasPeucker(it, DOUGLAS_PEUCKER_PIXEL_THRESHOLD) }
-                .let(::insertPathSeparators)
-                .let { LinePath.polygon(it) }
-
-            decorate(element, polygon.aes, filled = true)
-            element.rootGroup
-        }
-
-        return svg.zip(clientPolygonData)
     }
 
     private fun resample(linestring: List<PathPoint>): List<PathPoint> {
@@ -183,51 +136,33 @@ open class LinesHelper(
         return createPaths(dataPoints, toClientLocation(toLocation), sorted = true, closePath = false, nullsCounter = counter)
     }
 
-    fun createSteps(paths: Collection<PathData>, horizontalThenVertical: Boolean): List<LinePath> {
-        val linePaths = ArrayList<LinePath>()
-
-        // draw step for each group
-        paths.forEach { subPath ->
-            val points = subPath.coordinates
-            if (points.isNotEmpty()) {
-                val newPoints = ArrayList<DoubleVector>()
-                var prev: DoubleVector? = null
-                for (point in points) {
-                    if (prev != null) {
-                        val x = if (horizontalThenVertical) point.x else prev.x
-                        val y = if (horizontalThenVertical) prev.y else point.y
-                        newPoints.add(DoubleVector(x, y))
-                    }
-                    newPoints.add(point)
-                    prev = point
+    fun createSteps(paths: Collection<PathData>, horizontalThenVertical: Boolean): List<PathData> {
+        return paths.mapNotNull { subPath ->
+            val points = subPath.points
+            val newPoints = ArrayList<PathPoint>()
+            var prev: PathPoint? = null
+            for (point in points) {
+                if (prev != null) {
+                    val x = if (horizontalThenVertical) point.coord.x else prev.coord.x
+                    val y = if (horizontalThenVertical) prev.coord.y else point.coord.y
+                    newPoints.add(PathPoint(prev.aes, DoubleVector(x, y)))
                 }
-
-                val line = LinePath.line(newPoints)
-                decorate(line, subPath.aes, filled = false)
-                linePaths.add(line)
+                newPoints.add(point)
+                prev = point
             }
+            PathData.create(newPoints)
         }
-
-        return linePaths
     }
 
-    // TODO: inline. N.B.: for linear geoms, be careful with the closePath parameter
-    fun createBands(
+
+    // Client-space band paths (upper points + reversed lower points, closed) for the Renderer,
+    // the band analog of createPathData. Does not pre-simplify.
+    fun createBandData(
         dataPoints: Iterable<DataPointAesthetics>,
         toLocationUpper: (DataPointAesthetics) -> DoubleVector?,
         toLocationLower: (DataPointAesthetics) -> DoubleVector?,
-        simplifyBorders: Boolean = false
-    ): List<LinePath> {
-        return renderBands(dataPoints, toLocationUpper, toLocationLower, simplifyBorders, closePath = false)
-    }
-
-    fun renderBands(
-        dataPoints: Iterable<DataPointAesthetics>,
-        toLocationUpper: (DataPointAesthetics) -> DoubleVector?,
-        toLocationLower: (DataPointAesthetics) -> DoubleVector?,
-        simplifyBorders: Boolean,
-        closePath: Boolean
-    ): List<LinePath> {
+        closePath: Boolean = false
+    ): List<PathData> {
         val domainUpperPathData = createPaths(dataPoints, toLocationUpper, sorted = true, closePath, nullsCounter = counter)
         val domainLowerPathData = createPaths(dataPoints, toLocationLower, sorted = true, closePath, nullsCounter = counter)
 
@@ -243,24 +178,7 @@ open class LinesHelper(
             .zip(domainLowerPathData)
             .mapNotNull { (upperPath, lowerPath) -> PathData.create(upperPath.points + lowerPath.points.reversed()) }
 
-        val clientBandsPathData: List<PathData> = toClientPaths(domainBandsPathData)
-
-        return clientBandsPathData.mapNotNull { pathData ->
-            val points = pathData.coordinates
-
-            if (points.isNotEmpty()) {
-                val path = LinePath.polygon(
-                    when {
-                        simplifyBorders -> douglasPeucker(points, DOUGLAS_PEUCKER_PIXEL_THRESHOLD)
-                        else -> points
-                    }
-                )
-                decorateFillingPart(path, pathData.aes)
-                path
-            } else {
-                null
-            }
-        }
+        return toClientPaths(domainBandsPathData)
     }
 
     fun toClientPaths(domainPathData: List<PathData>): List<PathData> {
@@ -288,50 +206,7 @@ open class LinesHelper(
         }
     }
 
-    fun decorate(
-        path: LinePath,
-        p: DataPointAesthetics,
-        filled: Boolean,
-        strokeScaler: (DataPointAesthetics) -> Double = AesScaling::strokeWidth
-    ) {
-        val stroke = p.color()
-        val strokeAlpha = AestheticsUtil.alpha(stroke!!, p)
-        path.color().set(withOpacity(stroke, strokeAlpha))
-        if (!AestheticsUtil.ALPHA_CONTROLS_BOTH && (filled || !myAlphaEnabled)) {
-            path.color().set(stroke)
-        }
-
-        if (filled) {
-            decorateFillingPart(path, p)
-        }
-
-        val size = strokeScaler(p)
-        path.width().set(size)
-
-        val lineType = p.lineType()
-        path.lineType().set(lineType)
-    }
-
-    private fun decorateFillingPart(path: LinePath, p: DataPointAesthetics) {
-        val fill = p.fill()
-        val fillAlpha = AestheticsUtil.alpha(fill!!, p)
-        path.fill().set(withOpacity(fill, fillAlpha))
-    }
-
     companion object {
-        private fun insertPathSeparators(rings: Iterable<List<DoubleVector>>): List<DoubleVector?> {
-            val result = ArrayList<DoubleVector?>()
-            for (ring in rings) {
-                if (!result.isEmpty()) {
-                    result.add(LinePath.END_OF_SUBPATH) // this is polygon's path separator understood by PathLine component
-                }
-
-                result.addAll(ring)
-            }
-
-            return result
-        }
-
         fun splitByStyle(pathData: PathData): List<PathData> {
             return pathData.points
                 .splitBy(

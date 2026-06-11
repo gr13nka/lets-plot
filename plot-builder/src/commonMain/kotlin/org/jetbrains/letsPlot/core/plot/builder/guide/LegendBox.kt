@@ -10,10 +10,17 @@ import org.jetbrains.letsPlot.commons.geometry.DoubleVector
 import org.jetbrains.letsPlot.commons.values.Color
 import org.jetbrains.letsPlot.core.plot.base.layout.TextJustification
 import org.jetbrains.letsPlot.core.plot.base.layout.TextJustification.Companion.applyJustification
+import org.jetbrains.letsPlot.core.plot.base.render.RendererFactory
+import org.jetbrains.letsPlot.core.plot.base.render.SvgRoot
+import org.jetbrains.letsPlot.core.plot.base.render.SvgGElementRoot
+import org.jetbrains.letsPlot.core.plot.base.render.primitive.FillStyle
+import org.jetbrains.letsPlot.core.plot.base.render.primitive.StrokeStyle
+import org.jetbrains.letsPlot.core.plot.base.render.primitive.SvgRenderer
 import org.jetbrains.letsPlot.core.plot.base.render.svg.Label
-import org.jetbrains.letsPlot.core.plot.base.render.svg.StrokeDashArraySupport
 import org.jetbrains.letsPlot.core.plot.base.render.svg.SvgComponent
 import org.jetbrains.letsPlot.core.plot.base.theme.LegendTheme
+import org.jetbrains.letsPlot.core.plot.builder.comic.ComicRenderer
+import org.jetbrains.letsPlot.core.plot.builder.comic.ComicStyles
 import org.jetbrains.letsPlot.core.plot.builder.layout.PlotLabelSpecFactory
 import org.jetbrains.letsPlot.core.plot.builder.layout.PlotLayoutUtil
 import org.jetbrains.letsPlot.core.plot.builder.presentation.Style
@@ -40,13 +47,27 @@ abstract class LegendBox : SvgComponent() {
     }
 
     override fun buildComponent() {
-        if (theme.showBackground()) {
-            add(SvgRectElement(spec.innerBounds).apply {
-                strokeColor().set(theme.backgroundColor())
-                strokeWidth().set(theme.backgroundStrokeWidth())
-                StrokeDashArraySupport.apply(this, theme.backgroundStrokeWidth(), theme.backgroundLineType())
-                fillColor().set(theme.backgroundFill())
-            })
+        if (theme.showBackground() || theme.comicEnabled()) {
+            // Border is normally off (stroke width 0), force a visible width in comic mode.
+            val frameGroup = SvgGElement()
+            val rendererFactory: RendererFactory =
+                ComicStyles.resolve(theme.comicEnabled())?.let { style -> { root: SvgRoot -> ComicRenderer(root, style) } } ?: ::SvgRenderer
+            val strokeWidth = if (theme.comicEnabled() && theme.backgroundStrokeWidth() == 0.0) {
+                1.0
+            } else {
+                theme.backgroundStrokeWidth()
+            }
+            rendererFactory(SvgGElementRoot(frameGroup)).drawRect(
+                spec.innerBounds,
+                stroke = StrokeStyle(
+                    color = theme.backgroundColor(),
+                    alpha = null,
+                    width = strokeWidth,
+                    lineType = theme.backgroundLineType()
+                ),
+                fill = if (theme.showBackground()) FillStyle(theme.backgroundFill(), alpha = null) else null
+            )
+            add(frameGroup)
         }
 
         val innerGroup = SvgGElement()

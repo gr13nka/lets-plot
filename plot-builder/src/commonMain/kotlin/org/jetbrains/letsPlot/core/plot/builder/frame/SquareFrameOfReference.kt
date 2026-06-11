@@ -15,6 +15,7 @@ import org.jetbrains.letsPlot.core.plot.base.CoordinateSystem
 import org.jetbrains.letsPlot.core.plot.base.PlotContext
 import org.jetbrains.letsPlot.core.plot.base.Transform
 import org.jetbrains.letsPlot.core.plot.base.coord.TransformedCoordinateSystem
+import org.jetbrains.letsPlot.core.plot.base.render.RendererFactory
 import org.jetbrains.letsPlot.core.plot.base.render.svg.StrokeDashArraySupport
 import org.jetbrains.letsPlot.core.plot.base.render.svg.SvgComponent
 import org.jetbrains.letsPlot.core.plot.base.scale.ScaleBreaks
@@ -86,6 +87,8 @@ internal class SquareFrameOfReference(
                 axisTheme = vAxisTheme,
                 labelAdjustments = labelAdjustments,
                 isDebugDrawing = isDebugDrawing,
+                rendererFactory = rendererFactory,
+                comicEnabled = theme.comicEnabled,
             )
 
             val axisOrigin = marginsLayout.toAxisOrigin(
@@ -116,6 +119,8 @@ internal class SquareFrameOfReference(
                 axisTheme = hAxisTheme,
                 labelAdjustments = labelAdjustments,
                 isDebugDrawing = isDebugDrawing,
+                rendererFactory = rendererFactory,
+                comicEnabled = theme.comicEnabled,
             )
 
             val axisOrigin = marginsLayout.toAxisOrigin(
@@ -146,6 +151,7 @@ internal class SquareFrameOfReference(
                 geomContentBounds = layoutInfo.geomContentBounds,
                 gridTheme = gridTheme,
                 panelTheme = theme.panel(),
+                rendererFactory = rendererFactory,
             )
             val gridOrigin = layoutInfo.geomContentBounds.origin
             gridComponent.moveTo(gridOrigin)
@@ -170,6 +176,7 @@ internal class SquareFrameOfReference(
                 geomContentBounds = layoutInfo.geomContentBounds,
                 gridTheme = gridTheme,
                 panelTheme = theme.panel(),
+                rendererFactory = rendererFactory,
             )
             val gridOrigin = layoutInfo.geomContentBounds.origin
             gridComponent.moveTo(gridOrigin)
@@ -244,6 +251,8 @@ internal class SquareFrameOfReference(
             axisTheme: AxisTheme,
             labelAdjustments: TickLabelAdjustments,
             isDebugDrawing: Boolean,
+            rendererFactory: RendererFactory,
+            comicEnabled: Boolean,
         ): SvgComponent {
             val axis = AxisComponent(
                 length = info.axisLength,
@@ -252,7 +261,9 @@ internal class SquareFrameOfReference(
                 labelAdjustments = labelAdjustments,
                 axisTheme = axisTheme,
                 hideAxis = hideAxis,
-                hideAxisBreaks = hideAxisBreaks
+                hideAxisBreaks = hideAxisBreaks,
+                rendererFactory = rendererFactory,
+                comicEnabled = comicEnabled,
             )
 
             if (isDebugDrawing) {

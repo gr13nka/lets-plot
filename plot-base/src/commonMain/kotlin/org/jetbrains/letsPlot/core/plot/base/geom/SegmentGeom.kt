@@ -5,11 +5,14 @@
 
 package org.jetbrains.letsPlot.core.plot.base.geom
 
+import org.jetbrains.letsPlot.commons.intern.typedGeometry.algorithms.AdaptiveResampler
+import org.jetbrains.letsPlot.commons.intern.typedGeometry.algorithms.AdaptiveResampler.Companion.resample
 import org.jetbrains.letsPlot.core.plot.base.*
 import org.jetbrains.letsPlot.core.plot.base.geom.util.ArrowSpec
 import org.jetbrains.letsPlot.core.plot.base.geom.util.GeomHelper
 import org.jetbrains.letsPlot.core.plot.base.geom.util.GeomUtil.toLocation
 import org.jetbrains.letsPlot.core.plot.base.geom.util.TargetCollectorHelper
+import org.jetbrains.letsPlot.core.plot.base.geom.util.drawLineWithArrow
 import org.jetbrains.letsPlot.core.plot.base.render.LegendKeyElementFactory
 import org.jetbrains.letsPlot.core.plot.base.render.SvgRoot
 
@@ -34,21 +37,22 @@ class SegmentGeom : GeomBase() {
     ) {
         val tooltipHelper = TargetCollectorHelper(GeomKind.SEGMENT, ctx)
         val geomHelper = GeomHelper(pos, coord, ctx)
-        val svgHelper = geomHelper
-            .createSvgElementHelper()
-            .setStrokeAlphaEnabled(true)
-            .setSpacer(spacer)
-            .setResamplingEnabled(!coord.isLinear && !flat)
-            .setArrowSpec(arrowSpec)
-
+        val renderer = ctx.rendererFactory(root)
+        val resamplingEnabled = !coord.isLinear && !flat
 
         for (p in aesthetics.dataPoints()) {
             val start = p.toLocation(Aes.X, Aes.Y) ?: continue
             val end = p.toLocation(Aes.XEND, Aes.YEND) ?: continue
-            val (svg, geometry) = svgHelper.createLine(start, end, p) ?: continue
 
+            val clientLine = if (resamplingEnabled) {
+                resample(listOf(start, end), AdaptiveResampler.PIXEL_PRECISION) { geomHelper.toClient(it, p) }
+            } else {
+                listOf(geomHelper.toClient(start, p) ?: continue, geomHelper.toClient(end, p) ?: continue)
+            }
+            if (clientLine.size < 2) continue
+
+            val geometry = drawLineWithArrow(renderer, clientLine, p, arrowSpec, spacer)
             tooltipHelper.addLine(geometry, p)
-            root.add(svg)
         }
     }
 

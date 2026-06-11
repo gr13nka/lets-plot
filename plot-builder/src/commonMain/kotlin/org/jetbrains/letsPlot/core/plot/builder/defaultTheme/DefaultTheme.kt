@@ -55,6 +55,8 @@ class DefaultTheme internal constructor(
 
     override fun annotations(): AnnotationsTheme = annotations
 
+    override val comicEnabled: Boolean = options[ThemeOption.COMIC] as? Boolean ?: false
+
     override fun geometries(geomKind: GeomKind): GeomTheme = geometries.getOrPut(geomKind) {
         DefaultGeomTheme.forGeomKind(geomKind, colors)
     }

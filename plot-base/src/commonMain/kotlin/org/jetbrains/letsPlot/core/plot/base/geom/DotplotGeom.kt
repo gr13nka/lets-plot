@@ -15,13 +15,14 @@ import org.jetbrains.letsPlot.core.plot.base.geom.util.GeomHelper
 import org.jetbrains.letsPlot.core.plot.base.geom.util.GeomUtil
 import org.jetbrains.letsPlot.core.plot.base.geom.util.HintColorUtil.createColorMarkerMapper
 import org.jetbrains.letsPlot.core.plot.base.geom.util.LinesHelper
+import org.jetbrains.letsPlot.core.plot.base.geom.util.fillFor
 import org.jetbrains.letsPlot.core.plot.base.render.LegendKeyElementFactory
 import org.jetbrains.letsPlot.core.plot.base.render.SvgRoot
-import org.jetbrains.letsPlot.core.plot.base.render.svg.LinePath
+import org.jetbrains.letsPlot.core.plot.base.render.primitive.Renderer
+import org.jetbrains.letsPlot.core.plot.base.render.primitive.StrokeStyle
 import org.jetbrains.letsPlot.core.plot.base.stat.DotplotStat.Method
 import org.jetbrains.letsPlot.core.plot.base.tooltip.GeomTargetCollector
 import org.jetbrains.letsPlot.core.plot.base.tooltip.TipLayoutHint
-import org.jetbrains.letsPlot.datamodel.svg.dom.SvgPathDataBuilder
 import kotlin.math.abs
 import kotlin.math.ceil
 import kotlin.math.min
@@ -89,6 +90,7 @@ open class DotplotGeom : GeomBase(), WithWidth {
         ctx: GeomContext,
         binWidthPx: Double
     ) {
+        val renderer = ctx.rendererFactory(root)
         val dotHelper = DotHelper(pos, coord, ctx)
         val geomHelper = GeomHelper(pos, coord, ctx)
         var builtStackSize = 0
@@ -103,12 +105,12 @@ open class DotplotGeom : GeomBase(), WithWidth {
             var dotId = -1
             for (i in 0 until groupStackSize) {
                 dotId = if (stackDotsAcrossGroups()) builtStackSize + i else i
-                val path = dotHelper.createDot(
+                dotHelper.createDot(
+                    renderer,
                     p,
                     getDotCenter(p, dotId, p.stacksize()!!.toInt(), binWidthPx, ctx.flipped, geomHelper),
                     dotSize * binWidthPx / 2
                 )
-                root.add(path.rootGroup)
             }
             buildHint(p, dotId, ctx, geomHelper, binWidthPx)
             builtStackSize += groupStackSize
@@ -177,20 +179,17 @@ open class DotplotGeom : GeomBase(), WithWidth {
         ctx: GeomContext
     ) : LinesHelper(pos, coord, ctx) {
 
-        fun createDot(p: DataPointAesthetics, center: DoubleVector, r: Double): LinePath {
-            val leftBound = center.add(DoubleVector(-r, 0.0))
-            val rightBound = center.add(DoubleVector(r, 0.0))
-
-            val builder = SvgPathDataBuilder(true)
-            builder.moveTo(leftBound)
-            builder.ellipticalArc(r, r, 0.0, largeArc = false, sweep = false, to = rightBound)
-            builder.ellipticalArc(r, r, 0.0, largeArc = false, sweep = false, to = leftBound)
-            builder.closePath()
-
-            val path = LinePath(builder)
-            decorate(path, p, true) { p -> AesScaling.strokeWidth(p, DataPointAesthetics::stroke) }
-
-            return path
+        fun createDot(renderer: Renderer, p: DataPointAesthetics, center: DoubleVector, r: Double) {
+            renderer.drawCircle(
+                center, r,
+                stroke = StrokeStyle(
+                    color = p.color(),
+                    alpha = null,
+                    width = AesScaling.strokeWidth(p, DataPointAesthetics::stroke),
+                    lineType = p.lineType()
+                ),
+                fill = fillFor(p)
+            )
         }
     }
 

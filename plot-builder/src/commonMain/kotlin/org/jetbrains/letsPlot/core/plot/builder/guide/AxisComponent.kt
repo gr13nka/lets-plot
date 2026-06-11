@@ -8,9 +8,12 @@ package org.jetbrains.letsPlot.core.plot.builder.guide
 import org.jetbrains.letsPlot.commons.geometry.DoubleRectangle
 import org.jetbrains.letsPlot.commons.geometry.DoubleVector
 import org.jetbrains.letsPlot.commons.values.Color
+import org.jetbrains.letsPlot.core.plot.base.render.RendererFactory
+import org.jetbrains.letsPlot.core.plot.base.render.SvgGElementRoot
 import org.jetbrains.letsPlot.core.plot.base.render.linetype.LineType
+import org.jetbrains.letsPlot.core.plot.base.render.primitive.StrokeStyle
+import org.jetbrains.letsPlot.core.plot.base.render.primitive.SvgRenderer
 import org.jetbrains.letsPlot.core.plot.base.render.svg.Label
-import org.jetbrains.letsPlot.core.plot.base.render.svg.StrokeDashArraySupport
 import org.jetbrains.letsPlot.core.plot.base.render.svg.SvgComponent
 import org.jetbrains.letsPlot.core.plot.base.render.svg.Text
 import org.jetbrains.letsPlot.core.plot.base.render.svg.Text.HorizontalAnchor.*
@@ -20,7 +23,6 @@ import org.jetbrains.letsPlot.core.plot.builder.AxisUtil.tickLabelBaseOffset
 import org.jetbrains.letsPlot.core.plot.builder.layout.PlotLabelSpecFactory
 import org.jetbrains.letsPlot.core.plot.builder.presentation.Style
 import org.jetbrains.letsPlot.datamodel.svg.dom.SvgGElement
-import org.jetbrains.letsPlot.datamodel.svg.dom.SvgLineElement
 import org.jetbrains.letsPlot.datamodel.svg.dom.SvgUtils.transformTranslate
 
 class AxisComponent(
@@ -31,6 +33,8 @@ class AxisComponent(
     private val axisTheme: AxisTheme,
     private val hideAxis: Boolean = false,
     private val hideAxisBreaks: Boolean = false,
+    private val rendererFactory: RendererFactory = ::SvgRenderer,
+    private val comicEnabled: Boolean = false,
 ) : SvgComponent() {
 
     override fun buildComponent() {
@@ -100,21 +104,30 @@ class AxisComponent(
             addTicks(minorTicks, tickLabelBaseOffset)
         }
 
-        // Axis line
+        // Axis line. In comic mode it is split into one segment per gap between tick marks, so the
+        // wobble pins each path's endpoints and the line stays anchored at every tick base.
         if (axisTheme.showLine()) {
-            val x1: Double = if (orientation.isHorizontal) start else 0.0
-            val x2: Double = if (orientation.isHorizontal) end else 0.0
-            val y1: Double = if (!orientation.isHorizontal) start else 0.0
-            val y2: Double = if (!orientation.isHorizontal) end else 0.0
-
-            val axisLine = SvgLineElement(x1, y1, x2, y2).apply {
-                strokeWidth().set(axisTheme.lineWidth())
-                strokeColor().set(axisTheme.lineColor())
-                StrokeDashArraySupport.apply(this, axisTheme.lineWidth(), axisTheme.lineType())
+            val tickMarkLocs = if (comicEnabled) {
+                buildList {
+                    if (axisTheme.showTickMarks()) addAll(breaksData.majorBreaks.map(::tickLoc))
+                    if (axisTheme.showMinorTickMarks()) addAll(breaksData.minorBreaks.map(::tickLoc))
+                }.filter { it in start..end }.sorted()
+            } else {
+                emptyList()
             }
-            rootElement.children().add(axisLine)
+
+            val stroke = StrokeStyle(axisTheme.lineColor(), alpha = null, width = axisTheme.lineWidth(), lineType = axisTheme.lineType())
+            val renderer = rendererFactory(SvgGElementRoot(rootElement))
+            (listOf(start) + tickMarkLocs + end).distinct().zipWithNext { a, b ->
+                renderer.drawLine(axisPoint(a), axisPoint(b), stroke)
+            }
         }
     }
+
+    private fun tickLoc(break_: DoubleVector): Double = if (orientation.isHorizontal) break_.x else break_.y
+
+    private fun axisPoint(loc: Double): DoubleVector =
+        if (orientation.isHorizontal) DoubleVector(loc, 0.0) else DoubleVector(0.0, loc)
 
     private fun addTicks(ticks: TickData, tickLabelBaseOffset: DoubleVector) {
         for (i in ticks.breaks.indices) {
@@ -134,7 +147,7 @@ class AxisComponent(
             val g = SvgGElement()
 
             if (ticks.style.showTickMark)
-                g.children().add(buildTickMark(ticks.style))
+                drawTickMark(g, ticks.style)
 
             if (ticks.style.showLabel && label != null && labelOffset != null)
                 g.children().add(buildTickLabel(label, labelOffset))
@@ -148,19 +161,19 @@ class AxisComponent(
         }
     }
 
-    private fun buildTickMark(style: TickStyle): SvgLineElement {
-        return SvgLineElement().apply {
-            strokeWidth().set(style.width)
-            strokeColor().set(style.color)
-            StrokeDashArraySupport.apply(this, style.width, style.lineType)
-
-            when (orientation) {
-                Orientation.LEFT ->   { x2().set(-style.length); y2().set(0.0) }
-                Orientation.RIGHT ->  { x2().set( style.length); y2().set(0.0) }
-                Orientation.TOP ->    { x2().set(0.0); y2().set(-style.length) }
-                Orientation.BOTTOM -> { x2().set(0.0); y2().set( style.length) }
-            }
+    private fun drawTickMark(g: SvgGElement, style: TickStyle) {
+        val end = when (orientation) {
+            Orientation.LEFT ->   DoubleVector(-style.length, 0.0)
+            Orientation.RIGHT ->  DoubleVector( style.length, 0.0)
+            Orientation.TOP ->    DoubleVector(0.0, -style.length)
+            Orientation.BOTTOM -> DoubleVector(0.0,  style.length)
         }
+        // Tick marks stay crisp
+        SvgRenderer(SvgGElementRoot(g)).drawLine(
+            DoubleVector.ZERO,
+            end,
+            StrokeStyle(style.color, alpha = null, width = style.width, lineType = style.lineType)
+        )
     }
 
     private fun buildTickLabel(

@@ -17,6 +17,8 @@ import org.jetbrains.letsPlot.core.plot.base.geom.util.GeomHelper
 import org.jetbrains.letsPlot.core.plot.base.geom.util.HintColorUtil
 import org.jetbrains.letsPlot.core.plot.base.geom.util.RectangleTooltipHelper
 import org.jetbrains.letsPlot.core.plot.base.geom.util.RectanglesHelper
+import org.jetbrains.letsPlot.core.plot.base.geom.util.fillFor
+import org.jetbrains.letsPlot.core.plot.base.geom.util.strokeFor
 import org.jetbrains.letsPlot.core.plot.base.render.LegendKeyElementFactory
 import org.jetbrains.letsPlot.core.plot.base.render.SvgRoot
 import org.jetbrains.letsPlot.core.plot.base.tooltip.TipLayoutHint
@@ -37,6 +39,7 @@ class CrossBarGeom : GeomBase(), WithWidth {
         ctx: GeomContext
     ) {
         val geomHelper = GeomHelper(pos, coord, ctx)
+        val renderer = ctx.rendererFactory(root)
         val helper = RectanglesHelper(aesthetics, pos, coord, ctx, rectByDataPoint(geomHelper))
         val tooltipHelper = RectangleTooltipHelper(
             pos = pos,
@@ -50,19 +53,19 @@ class CrossBarGeom : GeomBase(), WithWidth {
         val rectangles = HashMap<DataPointAesthetics, DoubleRectangle>()
         val midLines = HashMap<Int, DoubleSegment>()
 
-        helper.createRectangles { aes, svgNode, rect ->
-            root.add(svgNode)
+        helper.createRectangles { aes, rect ->
+            renderer.drawRect(rect, strokeFor(aes, applyAlpha = false), fillFor(aes))
             tooltipHelper.addTarget(aes, rect)
             rectangles[aes] = rect
         }
 
         BoxHelper.buildMidlines(
+            renderer,
             aesthetics,
             fatten = fattenMidline,
             geomHelper,
             midLineByDataPoint(geomHelper)
-        ) { aes, svgNode, segment ->
-            root.add(svgNode)
+        ) { aes, segment ->
             midLines[aes.index()] = segment
         }
 

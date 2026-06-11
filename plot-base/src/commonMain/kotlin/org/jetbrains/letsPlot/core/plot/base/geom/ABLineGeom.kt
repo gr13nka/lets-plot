@@ -13,9 +13,9 @@ import org.jetbrains.letsPlot.core.plot.base.CoordinateSystem
 import org.jetbrains.letsPlot.core.plot.base.GeomContext
 import org.jetbrains.letsPlot.core.plot.base.PositionAdjustment
 import org.jetbrains.letsPlot.core.plot.base.geom.util.GeomHelper
+import org.jetbrains.letsPlot.core.plot.base.geom.util.strokeFor
 import org.jetbrains.letsPlot.core.plot.base.render.LegendKeyElementFactory
 import org.jetbrains.letsPlot.core.plot.base.render.SvgRoot
-import org.jetbrains.letsPlot.datamodel.svg.dom.SvgNode
 
 class ABLineGeom : GeomBase() {
 
@@ -29,14 +29,12 @@ class ABLineGeom : GeomBase() {
         coord: CoordinateSystem,
         ctx: GeomContext
     ) {
-        val helper = GeomHelper(pos, coord, ctx)
-            .createSvgElementHelper()
-        helper.setStrokeAlphaEnabled(true)
+        val geomHelper = GeomHelper(pos, coord, ctx)
+        val renderer = ctx.rendererFactory(root)
 
         val viewPort = overallAesBounds(ctx)
         val boundaries = viewPort.parts.toList()
 
-        val lines = ArrayList<SvgNode>()
         for (p in aesthetics.dataPoints()) {
             val intercept = p.intercept()
             val slope = p.slope()
@@ -58,13 +56,12 @@ class ABLineGeom : GeomBase() {
 
                 if (lineEnds.size == 2) {
                     val it = lineEnds.iterator()
-                    val (svg) = helper.createLine(it.next(), it.next(), p) ?: continue
-                    lines.add(svg)
+                    val start = geomHelper.toClient(it.next(), p) ?: continue
+                    val end = geomHelper.toClient(it.next(), p) ?: continue
+                    renderer.drawLine(start, end, strokeFor(p))
                 }
             }
         }
-
-        lines.forEach { root.add(it) }
     }
 
     companion object {

@@ -29,6 +29,8 @@ interface Theme {
 
     fun annotations(): AnnotationsTheme
 
+    val comicEnabled: Boolean
+
     fun geometries(geomKind: GeomKind): GeomTheme
 
     fun colors(): ColorTheme

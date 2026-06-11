@@ -202,7 +202,9 @@ open class GeomHelper(
             return createLine(start, end, p, strokeScaler)
         }
 
-        private fun createLineGeometry(
+        // Exposed so callers that render through the Renderer (quantile lines) can obtain the
+        // client-space polyline (resampled under non-linear coords) without building an SvgNode.
+        internal fun createLineGeometry(
             start: DoubleVector,
             end: DoubleVector,
             aes: DataPointAesthetics,
@@ -210,7 +212,7 @@ open class GeomHelper(
             return createLineGeometry(listOf(start, end), aes)
         }
 
-        private fun createLineGeometry(
+        internal fun createLineGeometry(
             points: List<DoubleVector>,
             aes: DataPointAesthetics,
         ): List<DoubleVector>? {

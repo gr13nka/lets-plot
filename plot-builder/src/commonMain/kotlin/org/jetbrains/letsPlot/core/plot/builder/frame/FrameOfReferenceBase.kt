@@ -12,6 +12,9 @@ import org.jetbrains.letsPlot.commons.values.Color
 import org.jetbrains.letsPlot.core.interact.UnsupportedInteractionException
 import org.jetbrains.letsPlot.core.plot.base.CoordinateSystem
 import org.jetbrains.letsPlot.core.plot.base.PlotContext
+import org.jetbrains.letsPlot.core.plot.base.render.RendererFactory
+import org.jetbrains.letsPlot.core.plot.base.render.SvgRoot
+import org.jetbrains.letsPlot.core.plot.base.render.primitive.SvgRenderer
 import org.jetbrains.letsPlot.core.plot.base.render.svg.SvgComponent
 import org.jetbrains.letsPlot.core.plot.base.theme.PanelGridTheme
 import org.jetbrains.letsPlot.core.plot.base.theme.Theme
@@ -21,6 +24,8 @@ import org.jetbrains.letsPlot.core.plot.builder.GeomLayer
 import org.jetbrains.letsPlot.core.plot.builder.LayerRendererUtil
 import org.jetbrains.letsPlot.core.plot.builder.SvgLayerRenderer
 import org.jetbrains.letsPlot.core.plot.builder.assemble.GeomContextBuilder
+import org.jetbrains.letsPlot.core.plot.builder.comic.ComicRenderer
+import org.jetbrains.letsPlot.core.plot.builder.comic.ComicStyles
 import org.jetbrains.letsPlot.core.plot.builder.layout.GeomMarginsLayout
 import org.jetbrains.letsPlot.core.plot.builder.layout.TileLayoutInfo
 import org.jetbrains.letsPlot.datamodel.svg.dom.SvgRectElement
@@ -39,6 +44,11 @@ internal abstract class FrameOfReferenceBase(
     // Flip theme
     protected val hAxisTheme = theme.horizontalAxis(flipAxis)
     protected val vAxisTheme = theme.verticalAxis(flipAxis)
+
+    // The factory is chosen here, where theme is in scope, and handed to AxisComponent/GridComponent:
+    // they get only sub-themes and can't read theme.comicEnabled.
+    protected val rendererFactory: RendererFactory =
+        ComicStyles.resolve(theme.comicEnabled)?.let { style -> { root: SvgRoot -> ComicRenderer(root, style) } } ?: ::SvgRenderer
 
     var isDebugDrawing: Boolean = false
 
@@ -61,6 +71,7 @@ internal abstract class FrameOfReferenceBase(
     protected fun buildGeom(layer: GeomLayer, targetCollector: GeomTargetCollector): SvgComponent {
         return buildGeom(
             plotContext,
+            theme,
             layer,  // positional aesthetics are the same as positional data.
             xyAesBounds = adjustedDomain.flipIf(flipAxis), // Data space -> View space
             coord,
@@ -160,6 +171,7 @@ internal abstract class FrameOfReferenceBase(
          */
         internal fun buildGeom(
             plotContext: PlotContext,
+            theme: Theme,
             layer: GeomLayer,
             xyAesBounds: DoubleRectangle,
             coord: CoordinateSystem,
@@ -197,6 +209,9 @@ internal abstract class FrameOfReferenceBase(
                 }
             }
 
+            val rendererFactory: RendererFactory =
+                ComicStyles.resolve(theme.comicEnabled)?.let { style -> { root: SvgRoot -> ComicRenderer(root, style) } } ?: ::SvgRenderer
+
             val ctx = GeomContextBuilder()
                 .flipped(flippedAxis)
                 .aesthetics(aesthetics)
@@ -211,6 +226,7 @@ internal abstract class FrameOfReferenceBase(
                 .coordinateSystem(coord)
                 .contentBounds(bounds)
                 .scaleFactor(plotContext.getScaleFactor())
+                .rendererFactory(rendererFactory)
                 .messageConsumer(plotContext.getMessageConsumer())
                 .build()
 

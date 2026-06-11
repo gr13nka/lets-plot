@@ -15,8 +15,11 @@ import org.jetbrains.letsPlot.core.plot.base.geom.util.GeomHelper
 import org.jetbrains.letsPlot.core.plot.base.geom.util.HintColorUtil
 import org.jetbrains.letsPlot.core.plot.base.geom.util.RectangleTooltipHelper
 import org.jetbrains.letsPlot.core.plot.base.geom.util.RectanglesHelper
+import org.jetbrains.letsPlot.core.plot.base.geom.util.strokeFor
 import org.jetbrains.letsPlot.core.plot.base.render.LegendKeyElementFactory
 import org.jetbrains.letsPlot.core.plot.base.render.SvgRoot
+import org.jetbrains.letsPlot.core.plot.base.render.primitive.Renderer
+import org.jetbrains.letsPlot.core.plot.base.render.primitive.StrokeStyle
 import org.jetbrains.letsPlot.datamodel.svg.dom.SvgGElement
 import org.jetbrains.letsPlot.datamodel.svg.dom.SvgLineElement
 
@@ -34,6 +37,7 @@ class ErrorBarGeom : GeomBase(), WithWidth {
         ctx: GeomContext
     ) {
         val geomHelper = GeomHelper(pos, coord, ctx)
+        val renderer = ctx.rendererFactory(root)
         val colorsByDataPoint = HintColorUtil.createColorMarkerMapper(GeomKind.ERROR_BAR, ctx)
         val tooltipHelper = RectangleTooltipHelper(
             pos = pos,
@@ -52,13 +56,11 @@ class ErrorBarGeom : GeomBase(), WithWidth {
             val height = ymax - ymin
 
             val rect = DoubleRectangle(x - width / 2, ymin, width, height)
-            val segments = errorBarShapeSegments(rect)
-            val g = errorBarShape(segments, p, geomHelper)
-            root.add(g)
+            drawErrorBarShape(rect, { geomHelper.toClient(it, p) }, renderer, strokeFor(p))
         }
         // tooltip
         val hintHelper = RectanglesHelper(aesthetics, pos, coord, ctx, rectByDataPoint(geomHelper))
-        hintHelper.createRectangles { aes, _, rect -> tooltipHelper.addTarget(aes, rect) }
+        hintHelper.createRectangles { aes, rect -> tooltipHelper.addTarget(aes, rect) }
     }
 
     private fun rectByDataPoint(geomHelper: GeomHelper): (DataPointAesthetics) -> DoubleRectangle? {
@@ -131,20 +133,18 @@ class ErrorBarGeom : GeomBase(), WithWidth {
             }
         }
 
-        private fun errorBarShape(
-            segments: List<DoubleSegment>,
-            p: DataPointAesthetics,
-            geomHelper: GeomHelper
-        ): SvgGElement {
-            val g = SvgGElement()
-            val elementHelper = geomHelper.createSvgElementHelper()
-            elementHelper.setStrokeAlphaEnabled(true)
-            segments.forEach { segment ->
-                g.children().add(
-                    elementHelper.createLine(segment.start, segment.end, p)!!.first
-                )
+        private fun drawErrorBarShape(
+            dataRect: DoubleRectangle,
+            toClient: (DoubleVector) -> DoubleVector?,
+            renderer: Renderer,
+            stroke: StrokeStyle
+        ) {
+            for (segment in errorBarShapeSegments(dataRect)) {
+                // Skip this segment if an endpoint has no client projection, keep drawing the rest.
+                val p1 = toClient(segment.start) ?: continue
+                val p2 = toClient(segment.end) ?: continue
+                renderer.drawLine(p1, p2, stroke)
             }
-            return g
         }
 
         const val HANDLES_GROUPS = false

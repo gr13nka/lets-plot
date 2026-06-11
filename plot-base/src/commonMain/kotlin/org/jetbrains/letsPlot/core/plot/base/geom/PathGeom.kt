@@ -9,6 +9,7 @@ import org.jetbrains.letsPlot.core.plot.base.*
 import org.jetbrains.letsPlot.core.plot.base.geom.util.GeomUtil
 import org.jetbrains.letsPlot.core.plot.base.geom.util.LinesHelper
 import org.jetbrains.letsPlot.core.plot.base.geom.util.TargetCollectorHelper
+import org.jetbrains.letsPlot.core.plot.base.geom.util.strokeFor
 import org.jetbrains.letsPlot.core.plot.base.render.LegendKeyElementFactory
 import org.jetbrains.letsPlot.core.plot.base.render.SvgRoot
 
@@ -40,8 +41,10 @@ open class PathGeom : GeomBase() {
         val targetCollectorHelper = TargetCollectorHelper(GeomKind.PATH, ctx)
         targetCollectorHelper.addVariadicPaths(pathData)
 
-        val svgPath = linesHelper.renderPaths(pathData, filled = false)
-        root.appendNodes(svgPath)
+        val renderer = ctx.rendererFactory(root)
+        for (path in pathData) {
+            renderer.drawPath(path.coordinates, strokeFor(path.aes), closed = false)
+        }
     }
 
     companion object {

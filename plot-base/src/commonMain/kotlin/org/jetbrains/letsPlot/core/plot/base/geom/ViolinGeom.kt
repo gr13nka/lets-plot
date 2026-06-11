@@ -11,9 +11,10 @@ import org.jetbrains.letsPlot.core.plot.base.geom.util.GeomUtil
 import org.jetbrains.letsPlot.core.plot.base.geom.util.LinesHelper
 import org.jetbrains.letsPlot.core.plot.base.geom.util.QuantilesHelper
 import org.jetbrains.letsPlot.core.plot.base.geom.util.TargetCollectorHelper
+import org.jetbrains.letsPlot.core.plot.base.geom.util.fillFor
+import org.jetbrains.letsPlot.core.plot.base.geom.util.strokeFor
 import org.jetbrains.letsPlot.core.plot.base.render.SvgRoot
 import org.jetbrains.letsPlot.core.plot.base.stat.BaseYDensityStat
-import org.jetbrains.letsPlot.datamodel.svg.dom.SvgNode
 
 class ViolinGeom : GeomBase() {
     var quantiles: List<Double> = BaseYDensityStat.DEF_QUANTILES
@@ -55,17 +56,24 @@ class ViolinGeom : GeomBase() {
         ctx: GeomContext
     ) {
         val helper = LinesHelper(pos, coord, ctx)
+        val renderer = ctx.rendererFactory(root)
         val quantilesHelper = QuantilesHelper(pos, coord, ctx, quantiles, Aes.X)
         val leftBoundTransform = toLocationBound(negativeSign, ctx)
         val rightBoundTransform = toLocationBound(positiveSign, ctx)
 
         quantilesHelper.splitByQuantiles(dataPoints, Aes.Y).forEach { points ->
-            val paths = helper.createBands(points, leftBoundTransform, rightBoundTransform)
-            root.appendNodes(paths)
+            val bands = helper.createBandData(points, leftBoundTransform, rightBoundTransform)
+            for (band in bands) {
+                renderer.drawPath(band.coordinates, stroke = null, fill = fillFor(band.aes), closed = true)
+            }
 
-            helper.setAlphaEnabled(false)
-            root.appendNodes(helper.createLines(points, leftBoundTransform))
-            root.appendNodes(helper.createLines(points, rightBoundTransform))
+            // Left and right edges: opaque-by-aes strokes (the old setAlphaEnabled(false) behavior).
+            for (line in helper.createPathData(points, leftBoundTransform)) {
+                renderer.drawPath(line.coordinates, strokeFor(line.aes, applyAlpha = false), closed = false)
+            }
+            for (line in helper.createPathData(points, rightBoundTransform)) {
+                renderer.drawPath(line.coordinates, strokeFor(line.aes, applyAlpha = false), closed = false)
+            }
 
             if (showHalf <= 0.0) {
                 buildHints(points, ctx, helper, leftBoundTransform)
@@ -76,7 +84,9 @@ class ViolinGeom : GeomBase() {
         }
 
         if (quantileLines) {
-            createQuantileLines(dataPoints, quantilesHelper, ctx).forEach(root::add)
+            createQuantileLines(dataPoints, quantilesHelper, ctx).forEach { (p, geometry) ->
+                renderer.drawPath(geometry, strokeFor(p, applyAlpha = false), closed = false)
+            }
         }
     }
 
@@ -84,14 +94,14 @@ class ViolinGeom : GeomBase() {
         dataPoints: Iterable<DataPointAesthetics>,
         quantilesHelper: QuantilesHelper,
         ctx: GeomContext
-    ): List<SvgNode> {
+    ): List<Pair<DataPointAesthetics, List<DoubleVector>>> {
         val toLocationBoundStart: (DataPointAesthetics) -> DoubleVector = { p ->
             DoubleVector(toLocationBound(negativeSign, ctx)(p).x, p.y()!!)
         }
         val toLocationBoundEnd: (DataPointAesthetics) -> DoubleVector = { p ->
             DoubleVector(toLocationBound(positiveSign, ctx)(p).x, p.y()!!)
         }
-        return quantilesHelper.getQuantileLineElements(dataPoints, Aes.Y, toLocationBoundStart, toLocationBoundEnd)
+        return quantilesHelper.getQuantileLineSegments(dataPoints, Aes.Y, toLocationBoundStart, toLocationBoundEnd)
     }
 
     private fun toLocationBound(

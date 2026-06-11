@@ -158,6 +158,7 @@ internal abstract class FrameOfReferenceProviderBase(
             )
             MarginalFrameOfReference(
                 plotContext,
+                theme,
                 boundsByMargin.getValue(side),
                 adjustedDomain = adjustedDomain,
                 coord,

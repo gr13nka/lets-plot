@@ -24,7 +24,6 @@ import org.jetbrains.letsPlot.core.plot.base.render.linetype.NamedLineType
 import org.jetbrains.letsPlot.core.plot.base.render.svg.Text.toDouble
 import org.jetbrains.letsPlot.core.plot.base.tooltip.GeomTargetCollector
 import org.jetbrains.letsPlot.core.plot.base.tooltip.TipLayoutHint
-import org.jetbrains.letsPlot.datamodel.svg.dom.SvgGElement
 
 open class TextRepelGeom: TextGeom() {
     var seed: Long? = null
@@ -50,15 +49,8 @@ open class TextRepelGeom: TextGeom() {
         coord: CoordinateSystem,
         ctx: GeomContext
     ) {
-
-        fun toClient(point: DoubleVector, @Suppress("UNUSED_PARAMETER") dp: DataPointAesthetics): DoubleVector? {
-            return coord.toClient(point)
-        }
-
         val textHelper = getTextHelper(aesthetics, pos, coord, ctx)
-        val svgHelper = GeomHelper.SvgElementHelper(::toClient)
-            .setStrokeAlphaEnabled(true)
-            .setArrowSpec(arrowSpec)
+        val renderer = ctx.rendererFactory(root)
         val targetCollector = getGeomTargetCollector(ctx)
         val colorsByDataPoint = HintColorUtil.createColorMarkerMapper(GeomKind.TEXT, ctx)
         val aesBoundsCenter = coord.toClient(ctx.getAesBounds())?.center
@@ -133,11 +125,9 @@ open class TextRepelGeom: TextGeom() {
             val sizeUnitRatio = AesScaling.sizeUnitRatio(point, coord, sizeUnit, POINT_UNIT_SIZE)
             val pointRadius = (shape.size(pointDp, sizeUnitRatio) + shape.strokeWidth(pointDp)) / 2
 
-            val segmentLocation = getSegmentLocation(pointLocation, pointRadius, result.box, sizeUnitRatio)
-            val segment = getSegment(segmentLocation, coord)
-
+            val segment = getSegmentLocation(pointLocation, pointRadius, result.box, sizeUnitRatio)
             if (segment != null) {
-                root.add(buildSegmentComponent(TextUtil.toSegmentAes(dp), segment, svgHelper))
+                drawLineWithArrow(renderer, listOf(segment.start, segment.end), TextUtil.toSegmentAes(dp), arrowSpec, spacer = 0.0)
             }
 
             targetCollector.addPoint(
@@ -152,20 +142,6 @@ open class TextRepelGeom: TextGeom() {
         }
     }
 
-    private fun buildSegmentComponent(
-        dp: DataPointAesthetics,
-        segment: DoubleSegment,
-        svgHelper: GeomHelper.SvgElementHelper
-    ): SvgGElement {
-        val g = SvgGElement()
-
-        val (svg, _) = svgHelper.createLine(segment, dp)!!
-
-        g.children().add(svg)
-
-        return g
-    }
-
     private fun getSegmentLocation(pointLocation: DoubleVector, pointRadius: Double, rect: TransformedRectangle, scale: Double): DoubleSegment? {
         val locEnd = rect.shortestSegmentToRectangleEdgeCenter(pointLocation)?.end ?: return null
 
@@ -174,14 +150,6 @@ open class TextRepelGeom: TextGeom() {
         if (locStart.subtract(locEnd).length() < minSegmentLength(scale)) return null
 
         return DoubleSegment(locStart, locEnd)
-    }
-
-    private fun getSegment(segmentLocation: DoubleSegment?, coord: CoordinateSystem): DoubleSegment? {
-        if (segmentLocation == null) return null
-        val start = coord.fromClient(segmentLocation.start) ?: return null
-        val end = coord.fromClient(segmentLocation.end) ?: return null
-
-        return DoubleSegment(start, end)
     }
 
     private fun boxPadding(scale: Double): Double {

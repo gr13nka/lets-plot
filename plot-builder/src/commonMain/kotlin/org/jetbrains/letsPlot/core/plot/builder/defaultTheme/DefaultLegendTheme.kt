@@ -13,6 +13,7 @@ import org.jetbrains.letsPlot.core.plot.base.render.linetype.LineType
 import org.jetbrains.letsPlot.core.plot.base.theme.FontFamilyRegistry
 import org.jetbrains.letsPlot.core.plot.base.theme.LegendTheme
 import org.jetbrains.letsPlot.core.plot.base.theme.ThemeTextStyle
+import org.jetbrains.letsPlot.core.plot.builder.defaultTheme.values.ThemeOption.COMIC
 import org.jetbrains.letsPlot.core.plot.builder.defaultTheme.values.ThemeOption.Elem
 import org.jetbrains.letsPlot.core.plot.builder.defaultTheme.values.ThemeOption.LEGEND_BKGR_RECT
 import org.jetbrains.letsPlot.core.plot.builder.defaultTheme.values.ThemeOption.LEGEND_BOX
@@ -137,6 +138,8 @@ internal class DefaultLegendTheme(
     }
 
     override fun backgroundLineType() = getLineType(getElemValue(backgroundKey))
+
+    override fun comicEnabled() = getBoolean(listOf(COMIC), defaultValue = false)
 
     override fun showTickMarks(): Boolean {
         return !isElemBlank(tickKey)

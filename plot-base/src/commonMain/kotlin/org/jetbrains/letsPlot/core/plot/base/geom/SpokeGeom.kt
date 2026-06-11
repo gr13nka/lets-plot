@@ -5,6 +5,7 @@
 
 package org.jetbrains.letsPlot.core.plot.base.geom
 
+import org.jetbrains.letsPlot.commons.geometry.DoubleVector
 import org.jetbrains.letsPlot.commons.interval.DoubleSpan
 import org.jetbrains.letsPlot.core.plot.base.*
 import org.jetbrains.letsPlot.core.plot.base.geom.legend.HLineLegendKeyElementFactory
@@ -13,8 +14,11 @@ import org.jetbrains.letsPlot.core.plot.base.geom.util.GeomHelper
 import org.jetbrains.letsPlot.core.plot.base.geom.util.GeomHelper.SvgElementHelper
 import org.jetbrains.letsPlot.core.plot.base.geom.util.GeomUtil.toLocation
 import org.jetbrains.letsPlot.core.plot.base.geom.util.TargetCollectorHelper
+import org.jetbrains.letsPlot.core.plot.base.geom.util.drawLineWithArrow
 import org.jetbrains.letsPlot.core.plot.base.render.LegendKeyElementFactory
 import org.jetbrains.letsPlot.core.plot.base.render.SvgRoot
+import kotlin.math.cos
+import kotlin.math.sin
 
 class SpokeGeom : GeomBase(), WithWidth, WithHeight {
     var arrowSpec: ArrowSpec? = null
@@ -32,18 +36,21 @@ class SpokeGeom : GeomBase(), WithWidth, WithHeight {
     ) {
         val tooltipHelper = TargetCollectorHelper(GeomKind.SPOKE, ctx)
         val geomHelper = GeomHelper(pos, coord, ctx)
-        val svgElementHelper = geomHelper.createSvgElementHelper()
-            .setStrokeAlphaEnabled(true)
-            .setArrowSpec(arrowSpec)
+        val renderer = ctx.rendererFactory(root)
 
         for (p in aesthetics.dataPoints()) {
-            val start = p.toLocation(Aes.X, Aes.Y) ?: continue
+            val base = p.toLocation(Aes.X, Aes.Y) ?: continue
             val angle = p.finiteOrNull(Aes.ANGLE) ?: continue
             val radius = p.finiteOrNull(Aes.RADIUS) ?: continue
-            val (svg, geometry) = svgElementHelper.createSpoke(start, angle, radius, pivot.factor, p) ?: continue
 
+            val spoke = DoubleVector(radius * cos(angle), radius * sin(angle))
+            val start = base.subtract(spoke.mul(pivot.factor))
+            val end = base.add(spoke.mul(1 - pivot.factor))
+            val c1 = geomHelper.toClient(start, p) ?: continue
+            val c2 = geomHelper.toClient(end, p) ?: continue
+
+            val geometry = drawLineWithArrow(renderer, listOf(c1, c2), p, arrowSpec, spacer = 0.0)
             tooltipHelper.addLine(geometry, p)
-            root.add(svg)
         }
     }
 

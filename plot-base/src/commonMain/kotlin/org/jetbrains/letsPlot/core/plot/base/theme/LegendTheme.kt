@@ -64,6 +64,8 @@ interface LegendTheme {
     fun backgroundStrokeWidth(): Double
     fun backgroundLineType(): LineType
 
+    fun comicEnabled(): Boolean
+
     // Colorbar tick-marks
     fun showTickMarks(): Boolean
     fun tickMarkColor(): Color

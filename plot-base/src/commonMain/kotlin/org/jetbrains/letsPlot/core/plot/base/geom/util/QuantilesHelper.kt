@@ -9,7 +9,6 @@ import org.jetbrains.letsPlot.commons.geometry.DoubleVector
 import org.jetbrains.letsPlot.commons.values.Color
 import org.jetbrains.letsPlot.core.commons.data.SeriesUtil
 import org.jetbrains.letsPlot.core.plot.base.*
-import org.jetbrains.letsPlot.datamodel.svg.dom.SvgNode
 
 open class QuantilesHelper(
     pos: PositionAdjustment,
@@ -56,18 +55,20 @@ open class QuantilesHelper(
         return dataPointBunches
     }
 
-    internal fun getQuantileLineElements(
+    // Each quantile line as aes, client-space polyline, for the caller to render through the
+    // Renderer (renderer.drawPath).
+    internal fun getQuantileLineSegments(
         dataPoints: Iterable<DataPointAesthetics>,
         axisAes: Aes<Double>,
         toLocationBoundStart: (DataPointAesthetics) -> DoubleVector,
         toLocationBoundEnd: (DataPointAesthetics) -> DoubleVector
-    ): List<SvgNode> {
+    ): List<Pair<DataPointAesthetics, List<DoubleVector>>> {
         if (quantiles.isEmpty() || dataPoints.none()) {
             return emptyList()
         }
 
         val quantiles = quantiles.sortedDescending()
-        val quantileLineElements = mutableListOf<SvgNode>()
+        val segments = mutableListOf<Pair<DataPointAesthetics, List<DoubleVector>>>()
         iterateThroughSortedDataPoints(dataPoints, axisAes) { ascendingSortedDataPoints ->
             val sortedDataPoints = ascendingSortedDataPoints.asReversed()
             var currPointsIdx = 0
@@ -76,14 +77,15 @@ open class QuantilesHelper(
                     val p = sortedDataPoints[currPointsIdx]
                     currPointsIdx++
                     if (quantile == p.quantile()) {
-                        quantileLineElements.add(getQuantileLineElement(p, toLocationBoundStart, toLocationBoundEnd))
+                        getQuantileLineGeometry(p, toLocationBoundStart, toLocationBoundEnd)
+                            ?.let { segments.add(p to it) }
                         break
                     }
                 }
             }
         }
 
-        return quantileLineElements
+        return segments
     }
 
     // true if in any group there is at least two distinct values of color or fill aesthetic
@@ -116,14 +118,14 @@ open class QuantilesHelper(
         }
     }
 
-    private fun getQuantileLineElement(
+    private fun getQuantileLineGeometry(
         dataPoint: DataPointAesthetics,
         toLocationBoundStart: (DataPointAesthetics) -> DoubleVector,
         toLocationBoundEnd: (DataPointAesthetics) -> DoubleVector
-    ): SvgNode {
+    ): List<DoubleVector>? {
         val svgElementHelper = GeomHelper(pos, coord, ctx).createSvgElementHelper()
         val start = toLocationBoundStart(dataPoint)
         val end = toLocationBoundEnd(dataPoint)
-        return svgElementHelper.createLine(start, end, dataPoint)!!.first
+        return svgElementHelper.createLineGeometry(start, end, dataPoint)
     }
 }

@@ -30,6 +30,7 @@ open class TileGeom : GeomBase(), WithWidth, WithHeight {
         ctx: GeomContext
     ) {
         val geomHelper = GeomHelper(pos, coord, ctx)
+        val renderer = ctx.rendererFactory(root)
         val tooltipHelper = RectangleTooltipHelper(pos, coord, ctx, tooltipKind = CURSOR_TOOLTIP)
         val helper = RectanglesHelper(aesthetics, pos, coord, ctx, clientRectByDataPoint(widthUnit, heightUnit, geomHelper))
         val svgRectHelper = helper.createSvgRectHelper()
@@ -42,8 +43,7 @@ open class TileGeom : GeomBase(), WithWidth, WithHeight {
             }
         }
 
-        val slimGroup = svgRectHelper.createSlimRectangles()
-        root.add(wrap(slimGroup))
+        svgRectHelper.drawRectangles(renderer)
     }
 
     override fun widthSpan(

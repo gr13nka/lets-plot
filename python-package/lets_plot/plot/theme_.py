@@ -19,6 +19,8 @@ __all__ = [
 def theme(*,
           exponent_format=None,
 
+          comic=None,
+
           line=None,
           rect=None,
           text=None,
@@ -121,6 +123,8 @@ def theme(*,
         See `Formatting <https://lets-plot.org/python/pages/formats.html>`__.
 
         Superscript is not supported when exporting to PNG/PDF.
+    comic : bool, default=False
+        If True, render the plot in comic (xkcd-style hand-drawn) mode.
     line : str or dict
         Style settings for all line elements.
         Set 'blank' or result of `element_blank() <https://lets-plot.org/python/pages/api/lets_plot.element_blank.html>`__ to draw nothing and assign no space.

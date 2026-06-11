@@ -10,68 +10,37 @@ import org.jetbrains.letsPlot.commons.geometry.DoubleSegment
 import org.jetbrains.letsPlot.commons.geometry.DoubleVector
 import org.jetbrains.letsPlot.core.plot.base.*
 import org.jetbrains.letsPlot.core.plot.base.aes.AesScaling
-import org.jetbrains.letsPlot.core.plot.base.geom.DimensionUnit
 import org.jetbrains.letsPlot.core.plot.base.render.LegendKeyElementFactory
-import org.jetbrains.letsPlot.core.plot.base.render.SvgRoot
+import org.jetbrains.letsPlot.core.plot.base.render.primitive.Renderer
 import org.jetbrains.letsPlot.datamodel.svg.dom.*
 
 object BoxHelper {
     fun buildBoxes(
-        root: SvgRoot,
+        renderer: Renderer,
         aesthetics: Aesthetics,
-        pos: PositionAdjustment,
-        coord: CoordinateSystem,
-        ctx: GeomContext,
-        rectFactory: (DataPointAesthetics) -> DoubleRectangle?
+        clientRectFactory: (DataPointAesthetics) -> DoubleRectangle?
     ) {
-        // rectangles
-        val helper = RectanglesHelper(aesthetics, pos, coord, ctx, rectFactory)
-        val rectangles = helper.createRectangles()
-        rectangles.forEach { root.add(it) }
-    }
-
-    fun buildMidlines(
-        root: SvgRoot,
-        aesthetics: Aesthetics,
-        xAes: Aes<Double>,
-        middleAes: Aes<Double>,
-        sizeAes: Aes<Double>,
-        widthUnit: DimensionUnit,
-        geomHelper: GeomHelper,
-        fatten: Double
-    ) {
-        val elementHelper = geomHelper.createSvgElementHelper()
-        for (p in aesthetics.dataPoints()) {
-            val x = p.finiteOrNull(xAes) ?: continue
-            val middle = p.finiteOrNull(middleAes) ?: continue
-            val w = p.finiteOrNull(sizeAes) ?: continue
-
-            val width = w * geomHelper.getUnitResolution(widthUnit, xAes)
-
-            val (line, _) = elementHelper.createLine(
-                DoubleVector(x - width / 2, middle),
-                DoubleVector(x + width / 2, middle),
-                p
-            ) { AesScaling.strokeWidth(it) * fatten } ?: continue
-
-            root.add(line)
+        aesthetics.dataPoints().forEach { p ->
+            clientRectFactory(p)?.let { renderer.drawRect(it, strokeFor(p, applyAlpha = false), fillFor(p)) }
         }
     }
 
+    // Draws each midline through the Renderer (so comic mode wobbles it). `fatten` scales the stroke
+    // width, onMidline reports the client segment for annotations.
     fun buildMidlines(
+        renderer: Renderer,
         aesthetics: Aesthetics,
         fatten: Double,
         geomHelper: GeomHelper,
         lineFactory: (DataPointAesthetics) -> DoubleSegment?,
-        handler: (DataPointAesthetics, SvgNode, DoubleSegment) -> Unit
+        onMidline: (DataPointAesthetics, DoubleSegment) -> Unit = { _, _ -> }
     ) {
         val elementHelper = geomHelper.createSvgElementHelper()
         aesthetics.dataPoints().forEach { p ->
             lineFactory(p)?.let { segment ->
-                val (svgNode, line) = elementHelper.createLine(segment, p) { AesScaling.strokeWidth(it) * fatten }
-                    ?: return@let
-
-                handler(p, svgNode, DoubleSegment(line[0], line[1]))
+                val geometry = elementHelper.createLineGeometry(segment.start, segment.end, p) ?: return@let
+                renderer.drawPath(geometry, strokeFor(p, applyAlpha = false).copy(width = AesScaling.strokeWidth(p) * fatten), closed = false)
+                onMidline(p, DoubleSegment(geometry.first(), geometry.last()))
             }
         }
     }

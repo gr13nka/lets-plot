@@ -20,6 +20,7 @@ import org.jetbrains.letsPlot.core.plot.builder.defaultTheme.values.ThemeOption.
 import org.jetbrains.letsPlot.core.plot.builder.defaultTheme.values.ThemeOption.AXIS_TICKS_LENGTH
 import org.jetbrains.letsPlot.core.plot.builder.defaultTheme.values.ThemeOption.AXIS_TITLE
 import org.jetbrains.letsPlot.core.plot.builder.defaultTheme.values.ThemeOption.AXIS_TOOLTIP
+import org.jetbrains.letsPlot.core.plot.builder.defaultTheme.values.ThemeOption.COMIC
 import org.jetbrains.letsPlot.core.plot.builder.defaultTheme.values.ThemeOption.ELEMENT_BLANK
 import org.jetbrains.letsPlot.core.plot.builder.defaultTheme.values.ThemeOption.Elem
 import org.jetbrains.letsPlot.core.plot.builder.defaultTheme.values.ThemeOption.FACET_PANEL_SPACING
@@ -108,6 +109,8 @@ internal open class ThemeValuesBase : ThemeValues(VALUES) {
 
             PANEL_BORDER_RECT to ELEMENT_BLANK,
             PANEL_BORDER_ONTOP to true,
+
+            COMIC to false,
 
             PLOT_BKGR_RECT to mapOf(
                 Elem.SIZE to 0.0,
