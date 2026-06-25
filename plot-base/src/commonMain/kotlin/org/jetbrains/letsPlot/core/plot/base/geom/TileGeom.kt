@@ -11,7 +11,7 @@ import org.jetbrains.letsPlot.commons.interval.DoubleSpan
 import org.jetbrains.letsPlot.core.plot.base.*
 import org.jetbrains.letsPlot.core.plot.base.geom.util.GeomHelper
 import org.jetbrains.letsPlot.core.plot.base.geom.util.RectangleTooltipHelper
-import org.jetbrains.letsPlot.core.plot.base.geom.util.RectanglesHelper
+import org.jetbrains.letsPlot.core.plot.base.geom.util.SvgRectHelper
 import org.jetbrains.letsPlot.core.plot.base.render.SvgRoot
 import org.jetbrains.letsPlot.core.plot.base.tooltip.TipLayoutHint.Kind.CURSOR_TOOLTIP
 
@@ -31,19 +31,8 @@ open class TileGeom : GeomBase(), WithWidth, WithHeight {
     ) {
         val geomHelper = GeomHelper(pos, coord, ctx)
         val tooltipHelper = RectangleTooltipHelper(pos, coord, ctx, tooltipKind = CURSOR_TOOLTIP)
-        val helper = RectanglesHelper(aesthetics, pos, coord, ctx, clientRectByDataPoint(widthUnit, heightUnit, geomHelper))
-        val svgRectHelper = helper.createSvgRectHelper()
-        svgRectHelper.setResamplingEnabled(!coord.isLinear)
-        svgRectHelper.onGeometry { p, rect, polygon ->
-            if (polygon != null) {
-                tooltipHelper.addTarget(p, polygon)
-            } else if (rect != null) {
-                tooltipHelper.addTarget(p, rect)
-            }
-        }
-
-        val slimGroup = svgRectHelper.createSlimRectangles()
-        root.add(wrap(slimGroup))
+        SvgRectHelper.area(aesthetics, pos, coord, ctx, rectByDataPoint(widthUnit, heightUnit, geomHelper))
+            .drawSlimTo(root, tooltipHelper)
     }
 
     override fun widthSpan(
@@ -70,7 +59,7 @@ open class TileGeom : GeomBase(), WithWidth, WithHeight {
         val DEF_WIDTH_UNIT: DimensionUnit = DimensionUnit.RESOLUTION
         val DEF_HEIGHT_UNIT: DimensionUnit = DimensionUnit.RESOLUTION
 
-        private fun clientRectByDataPoint(
+        private fun rectByDataPoint(
             widthUnit: DimensionUnit,
             heightUnit: DimensionUnit,
             helper: GeomHelper

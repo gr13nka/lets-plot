@@ -888,6 +888,7 @@ object Option {
     object Theme {
         // System
         const val EXPONENT_FORMAT = ThemeOption.EXPONENT_FORMAT
+        const val RENDERER = ThemeOption.RENDERER
 
         // Common
         const val TITLE = ThemeOption.TITLE
@@ -1073,6 +1074,11 @@ object Option {
             const val HIGH_CONTRAST_LIGHT = ThemeOption.Flavor.HIGH_CONTRAST_LIGHT
             const val HIGH_CONTRAST_DARK = ThemeOption.Flavor.HIGH_CONTRAST_DARK
             const val STANDARD = ThemeOption.Flavor.STANDARD
+        }
+
+        object Renderer {
+            const val NONE = ThemeOption.Renderer.NONE
+            const val XKCD = ThemeOption.Renderer.XKCD
         }
 
         object Geom {

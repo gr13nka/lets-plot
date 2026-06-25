@@ -8,6 +8,7 @@ package org.jetbrains.letsPlot.core.plot.builder.defaultTheme.values
 object ThemeOption {
     // System
     const val EXPONENT_FORMAT = "exponent_format"
+    const val RENDERER = "renderer"
 
     // Common
     const val TITLE = "title"
@@ -204,6 +205,11 @@ object ThemeOption {
         const val HIGH_CONTRAST_LIGHT = "high_contrast_light"
         const val HIGH_CONTRAST_DARK = "high_contrast_dark"
         const val STANDARD= "standard"
+    }
+
+    object Renderer {
+        const val NONE = "none"
+        const val XKCD = "xkcd"
     }
 
     object Geom {

@@ -12,14 +12,13 @@ import org.jetbrains.letsPlot.core.plot.base.aes.AesScaling
 import org.jetbrains.letsPlot.core.plot.base.geom.legend.CompositeLegendKeyElementFactory
 import org.jetbrains.letsPlot.core.plot.base.geom.legend.VLineLegendKeyElementFactory
 import org.jetbrains.letsPlot.core.plot.base.geom.util.GeomHelper
-import org.jetbrains.letsPlot.core.plot.base.geom.util.GeomHelper.Companion.decorate
 import org.jetbrains.letsPlot.core.plot.base.geom.util.GeomUtil
 import org.jetbrains.letsPlot.core.plot.base.geom.util.HintColorUtil
 import org.jetbrains.letsPlot.core.plot.base.geom.util.RectangleTooltipHelper
+import org.jetbrains.letsPlot.core.plot.base.geom.util.SvgRectHelper
 import org.jetbrains.letsPlot.core.plot.base.render.LegendKeyElementFactory
 import org.jetbrains.letsPlot.core.plot.base.render.SvgRoot
 import org.jetbrains.letsPlot.core.plot.base.render.point.PointShapeSvg
-import org.jetbrains.letsPlot.datamodel.svg.dom.SvgRectElement
 
 class PointRangeGeom : GeomBase() {
     var fattenMidPoint: Double = DEF_FATTEN
@@ -68,19 +67,10 @@ class PointRangeGeom : GeomBase() {
             val o = PointShapeSvg.create(shape, location, p, fattenMidPoint)
             root.add(wrap(o))
         }
-        // tooltip
-        /*
-          Unlike the cases of CrossBarGeom and ErrorBarGeom, it is inconvenient to use RectanglesHelper here.
-          RectanglesHelper uses a geometry factory that returns rectangles in data coordinates, but clientRectByDataPoint() returns client coordinates.
-          Otherwise it is difficult to correctly calculate the width of the rectangle bounding the geometry, especially when the geometry is rotated.
-        */
-        aesthetics.dataPoints().forEach { p ->
-            clientRectByDataPoint(geomHelper, fattenMidPoint)(p)?.let { clientRect ->
-                val svgRect = SvgRectElement(clientRect)
-                decorate(svgRect, p)
-                tooltipHelper.addTarget(p, clientRect)
-            }
-        }
+        // tooltip - the factory returns client coordinates (a pixel-width rect that accounts for
+        // rotation), so the helper draws nothing and only reports the rect for hit-testing.
+        SvgRectHelper.clientBox(aesthetics, pos, coord, ctx, clientRectByDataPoint(geomHelper, fattenMidPoint))
+            .collectTooltips(tooltipHelper)
     }
 
     private fun clientRectByDataPoint(

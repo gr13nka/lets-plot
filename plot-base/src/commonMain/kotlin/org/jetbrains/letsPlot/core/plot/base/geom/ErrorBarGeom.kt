@@ -14,7 +14,7 @@ import org.jetbrains.letsPlot.core.plot.base.aes.AesScaling
 import org.jetbrains.letsPlot.core.plot.base.geom.util.GeomHelper
 import org.jetbrains.letsPlot.core.plot.base.geom.util.HintColorUtil
 import org.jetbrains.letsPlot.core.plot.base.geom.util.RectangleTooltipHelper
-import org.jetbrains.letsPlot.core.plot.base.geom.util.RectanglesHelper
+import org.jetbrains.letsPlot.core.plot.base.geom.util.SvgRectHelper
 import org.jetbrains.letsPlot.core.plot.base.render.LegendKeyElementFactory
 import org.jetbrains.letsPlot.core.plot.base.render.SvgRoot
 import org.jetbrains.letsPlot.datamodel.svg.dom.SvgGElement
@@ -57,8 +57,8 @@ class ErrorBarGeom : GeomBase(), WithWidth {
             root.add(g)
         }
         // tooltip
-        val hintHelper = RectanglesHelper(aesthetics, pos, coord, ctx, rectByDataPoint(geomHelper))
-        hintHelper.createRectangles { aes, _, rect -> tooltipHelper.addTarget(aes, rect) }
+        SvgRectHelper.box(aesthetics, pos, coord, ctx, rectByDataPoint(geomHelper))
+            .collectTooltips(tooltipHelper)
     }
 
     private fun rectByDataPoint(geomHelper: GeomHelper): (DataPointAesthetics) -> DoubleRectangle? {

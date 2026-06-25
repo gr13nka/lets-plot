@@ -12,9 +12,8 @@ import org.jetbrains.letsPlot.core.plot.base.*
 import org.jetbrains.letsPlot.core.plot.base.geom.annotation.BarAnnotation
 import org.jetbrains.letsPlot.core.plot.base.geom.util.LinesHelper
 import org.jetbrains.letsPlot.core.plot.base.geom.util.RectangleTooltipHelper
-import org.jetbrains.letsPlot.core.plot.base.geom.util.RectanglesHelper
+import org.jetbrains.letsPlot.core.plot.base.geom.util.SvgRectHelper
 import org.jetbrains.letsPlot.core.plot.base.render.SvgRoot
-import org.jetbrains.letsPlot.datamodel.svg.dom.SvgNode
 
 open class BarGeom : GeomBase() {
 
@@ -28,23 +27,17 @@ open class BarGeom : GeomBase() {
         ctx: GeomContext
     ) {
         val binSpan = getBinSpanCalculator(ctx)
-        val helper = RectanglesHelper(aesthetics, pos, coord, ctx, visualRectByDataPoint(binSpan))
         val tooltipHelper = RectangleTooltipHelper(pos, coord, ctx)
-        val rectangles = mutableListOf<SvgNode>()
+        val visual = SvgRectHelper.area(aesthetics, pos, coord, ctx, visualRectByDataPoint(binSpan))
         if (coord.isLinear) {
-            helper.createRectangles { _, svgNode, _ -> rectangles.add(svgNode) }
-
             // Snap tooltips to the proper side (e.g. bottom for negative values, right for coord_flip)
-            val hintHelper = RectanglesHelper(aesthetics, pos, coord, ctx, hintRectByDataPoint(binSpan))
-            hintHelper.createRectangles { aes, _, rect -> tooltipHelper.addTarget(aes, rect) }
+            SvgRectHelper.box(aesthetics, pos, coord, ctx, hintRectByDataPoint(binSpan))
+                .collectTooltips(tooltipHelper)
+            // Paint earlier bars on top to fix overlapping draw order (commit 8096bb0d8).
+            visual.buildNodes().asReversed().forEach(root::add)
         } else {
-            helper.createNonLinearRectangles { aes, svgNode, polygon ->
-                rectangles.add(svgNode)
-                tooltipHelper.addTarget(aes, polygon)
-            }
+            visual.buildNodes(tooltipHelper).asReversed().forEach(root::add)
         }
-        rectangles.reverse() // TODO: why reverse?
-        rectangles.forEach(root::add)
 
         ctx.annotation?.let {
             val dataPoints = aesthetics.dataPoints()

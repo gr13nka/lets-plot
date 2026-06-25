@@ -25,9 +25,8 @@ object BoxHelper {
         rectFactory: (DataPointAesthetics) -> DoubleRectangle?
     ) {
         // rectangles
-        val helper = RectanglesHelper(aesthetics, pos, coord, ctx, rectFactory)
-        val rectangles = helper.createRectangles()
-        rectangles.forEach { root.add(it) }
+        SvgRectHelper.clientBox(aesthetics, pos, coord, ctx, rectFactory)
+            .drawTo(root)
     }
 
     fun buildMidlines(
