@@ -8,7 +8,8 @@ package org.jetbrains.letsPlot.core.plot.base.geom
 import org.jetbrains.letsPlot.commons.geometry.DoubleVector
 import org.jetbrains.letsPlot.core.plot.base.DataPointAesthetics
 import org.jetbrains.letsPlot.core.plot.base.aes.AesScaling
-import org.jetbrains.letsPlot.core.plot.base.aes.AestheticsUtil
+import org.jetbrains.letsPlot.core.plot.base.geom.util.fillFor
+import org.jetbrains.letsPlot.core.plot.base.render.primitive.applyFill
 import org.jetbrains.letsPlot.core.plot.base.geom.util.TextUtil
 import org.jetbrains.letsPlot.core.plot.base.geom.util.TextUtil.angle
 import org.jetbrains.letsPlot.core.plot.base.geom.util.TextUtil.fontSize
@@ -23,7 +24,7 @@ internal class TextLegendKeyElementFactory :
 
     override fun createKeyElement(p: DataPointAesthetics, size: DoubleVector): SvgGElement {
         val rect = SvgRectElement(0.0, 0.0, size.x, size.y)
-        AestheticsUtil.updateFill(rect, p)
+        rect.applyFill(fillFor(p))
 
         val label = Label("a")
         TextUtil.decorate(label, p)

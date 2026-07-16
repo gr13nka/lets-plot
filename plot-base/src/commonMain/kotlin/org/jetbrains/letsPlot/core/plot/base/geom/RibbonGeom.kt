@@ -36,15 +36,10 @@ class RibbonGeom : GeomBase() {
         val dataPoints = dataPoints(aesthetics)
         val helper = LinesHelper(pos, coord, ctx)
 
-        val paths = helper.createBands(dataPoints, TO_LOCATION_X_YMAX_WITH_FINITE_YMIN, TO_LOCATION_X_YMIN_WITH_FINITE_YMAX)
-        root.appendNodes(paths)
-
-        //if you want to retain the side edges of ribbon:
-        //comment out the following codes, and switch decorate method in LinesHelper.createBands
-        helper.setAlphaEnabled(false)
-
-        root.appendNodes(helper.createLines(dataPoints, TO_LOCATION_X_YMAX))
-        root.appendNodes(helper.createLines(dataPoints, TO_LOCATION_X_YMIN))
+        val bands = helper.createBandData(dataPoints, TO_LOCATION_X_YMAX_WITH_FINITE_YMIN, TO_LOCATION_X_YMIN_WITH_FINITE_YMAX)
+        val lines = listOf(TO_LOCATION_X_YMAX, TO_LOCATION_X_YMIN)
+            .flatMap { toLocation -> helper.createPathData(dataPoints, toLocation) }
+        drawBands(root, ctx.renderer, bands, lines)
 
         buildHints(aesthetics, pos, coord, ctx)
     }

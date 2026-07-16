@@ -7,12 +7,15 @@ package org.jetbrains.letsPlot.core.plot.builder.guide
 
 import org.jetbrains.letsPlot.commons.geometry.DoubleRectangle
 import org.jetbrains.letsPlot.commons.geometry.DoubleVector
+import org.jetbrains.letsPlot.core.plot.base.render.primitive.Renderer
+import org.jetbrains.letsPlot.core.plot.base.render.primitive.CrispRenderer
 import org.jetbrains.letsPlot.core.plot.base.theme.LegendTheme
 
 abstract class LegendBoxSpec(
     val title: String,
     val theme: LegendTheme,
-    val reverse: Boolean
+    val reverse: Boolean,
+    val renderer: Renderer = CrispRenderer,
 ) {
 
     abstract val layout: LegendBoxLayout

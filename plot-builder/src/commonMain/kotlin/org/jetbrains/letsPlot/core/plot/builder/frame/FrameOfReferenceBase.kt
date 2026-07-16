@@ -12,6 +12,8 @@ import org.jetbrains.letsPlot.commons.values.Color
 import org.jetbrains.letsPlot.core.interact.UnsupportedInteractionException
 import org.jetbrains.letsPlot.core.plot.base.CoordinateSystem
 import org.jetbrains.letsPlot.core.plot.base.PlotContext
+import org.jetbrains.letsPlot.core.plot.base.render.primitive.Renderer
+import org.jetbrains.letsPlot.core.plot.base.render.primitive.CrispRenderer
 import org.jetbrains.letsPlot.core.plot.base.render.svg.SvgComponent
 import org.jetbrains.letsPlot.core.plot.base.theme.PanelGridTheme
 import org.jetbrains.letsPlot.core.plot.base.theme.Theme
@@ -67,7 +69,8 @@ internal abstract class FrameOfReferenceBase(
             flipAxis,
             targetCollector,
             backgroundColor = if (theme.panel().showRect()) theme.panel().rectFill() else theme.plot().backgroundFill(),
-            bounds = layoutInfo.geomContentBounds
+            bounds = layoutInfo.geomContentBounds,
+            renderer = theme.renderer
         )
     }
 
@@ -167,6 +170,7 @@ internal abstract class FrameOfReferenceBase(
             targetCollector: GeomTargetCollector,
             backgroundColor: Color,
             bounds: DoubleRectangle = DoubleRectangle(DoubleVector.ZERO, DoubleVector.ZERO),
+            renderer: Renderer = CrispRenderer,
         ): SvgComponent {
             val rendererData = LayerRendererUtil.createLayerRendererData(layer)
 
@@ -211,6 +215,7 @@ internal abstract class FrameOfReferenceBase(
                 .coordinateSystem(coord)
                 .contentBounds(bounds)
                 .scaleFactor(plotContext.getScaleFactor())
+                .renderer(renderer)
                 .messageConsumer(plotContext.getMessageConsumer())
                 .build()
 

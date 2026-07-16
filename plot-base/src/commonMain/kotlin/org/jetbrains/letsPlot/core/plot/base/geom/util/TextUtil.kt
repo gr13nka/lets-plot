@@ -15,7 +15,6 @@ import org.jetbrains.letsPlot.core.plot.base.GeomContext
 import org.jetbrains.letsPlot.core.plot.base.aes.AesInitValue.DEFAULT_ALPHA
 import org.jetbrains.letsPlot.core.plot.base.aes.AesInitValue.DEFAULT_SEGMENT_COLOR
 import org.jetbrains.letsPlot.core.plot.base.aes.AesScaling
-import org.jetbrains.letsPlot.core.plot.base.aes.AestheticsUtil
 import org.jetbrains.letsPlot.core.plot.base.render.svg.Label
 import org.jetbrains.letsPlot.core.plot.base.render.svg.Text
 import org.jetbrains.letsPlot.datamodel.svg.dom.SvgGElement
@@ -151,28 +150,16 @@ object TextUtil {
     fun lineheight(p: DataPointAesthetics, scale: Double) = p.lineheight()!! * fontSize(p, scale)
 
     fun decorate(label: Label, p: DataPointAesthetics, scale: Double = 1.0, applyAlpha: Boolean = true) {
-        val color = p.color()!!
-        label.textColor().set(color)
-        val alpha = if (applyAlpha) {
-            // apply alpha aes
-            AestheticsUtil.alpha(color, p)
-        } else {
-            // keep color's alpha
-            SvgUtils.alpha2opacity(color.alpha)
-        }
-        label.setTextOpacity(alpha)
-
-        label.setFontSize(fontSize(p, scale))
-        label.setLineHeight(lineheight(p, scale))
-
-        // family
-        label.setFontFamily(fontFamily(p))
-
-        // fontface
-        // ignore 'plain' / 'normal' as it is default values
-        with(FontFace.fromString(p.fontface())) {
-            if (bold) label.setFontWeight("bold")
-            if (italic) label.setFontStyle("italic")
+        // All paint/font/lineheight come from textStyleFor (the aes-to-TextStyle seam).
+        val style = textStyleFor(p, scale, applyAlpha)
+        label.textColor().set(style.color)
+        label.setTextOpacity(style.alpha)
+        label.setFontSize(style.sizePx)
+        style.lineHeight?.let { label.setLineHeight(it) }
+        label.setFontFamily(style.family)
+        style.face?.let {
+            if (it.bold) label.setFontWeight("bold")
+            if (it.italic) label.setFontStyle("italic")
         }
     }
 
@@ -229,6 +216,35 @@ object TextUtil {
                 return value as T?
             }
         }
+    }
+
+    // Renderer-path text component. Multi-line and rotated text keep the legacy positioning:
+    // renderer.text carries no angle and can't reproduce the multi-line vertical layout pixel-for-pixel.
+    // For single-line text the output matches textComponentFactory exactly.
+    internal fun textComponent(
+        p: DataPointAesthetics,
+        location: DoubleVector,
+        text: String,
+        ctx: GeomContext,
+        flipAngle: Boolean = false,
+        sizeUnitRatio: Double = 1.0,
+        boundsCenter: DoubleVector? = null,
+        labelNudge: (location: DoubleVector, size: DoubleVector) -> DoubleVector = DEF_LABEL_NUDGE
+    ): SvgGElement {
+        val isMultiline = Label.splitLines(text).size > 1
+        if (isMultiline || orientedAngle(p, flipAngle, ctx) != 0.0) {
+            return textComponentFactory(p, location, text, ctx, flipAngle, sizeUnitRatio, boundsCenter, labelNudge)
+        }
+        val fontSize = fontSize(p, sizeUnitRatio)
+        val textSize = measure(text, p, ctx, sizeUnitRatio)
+        val yPosition = vAnchor(p, location, boundsCenter).let { vjust ->
+            location.y + (vjust - 1) * textSize.y + (1 - 0.3 * vjust) * fontSize
+        }
+        val origin = labelNudge(DoubleVector(location.x, yPosition), textSize)
+        val style = textStyleFor(p, sizeUnitRatio).copy(hAnchor = hAnchor(p, location, boundsCenter))
+        val g = SvgGElement()
+        g.children().add(ctx.renderer.text(origin, text, style))
+        return g
     }
 
     internal fun textComponentFactory(

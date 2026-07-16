@@ -15,10 +15,13 @@ import org.jetbrains.letsPlot.core.plot.base.CoordinateSystem
 import org.jetbrains.letsPlot.core.plot.base.PlotContext
 import org.jetbrains.letsPlot.core.plot.base.Transform
 import org.jetbrains.letsPlot.core.plot.base.coord.TransformedCoordinateSystem
+import org.jetbrains.letsPlot.core.plot.base.render.primitive.Renderer
+import org.jetbrains.letsPlot.core.plot.base.render.primitive.StrokeStyle
 import org.jetbrains.letsPlot.core.plot.base.render.svg.StrokeDashArraySupport
 import org.jetbrains.letsPlot.core.plot.base.render.svg.SvgComponent
 import org.jetbrains.letsPlot.core.plot.base.scale.ScaleBreaks
 import org.jetbrains.letsPlot.core.plot.base.theme.AxisTheme
+import org.jetbrains.letsPlot.core.plot.base.theme.ChromeAdaptation
 import org.jetbrains.letsPlot.core.plot.base.theme.PanelGridTheme
 import org.jetbrains.letsPlot.core.plot.base.theme.Theme
 import org.jetbrains.letsPlot.core.plot.base.tooltip.GeomTargetCollector
@@ -53,6 +56,9 @@ internal class SquareFrameOfReference(
     flipAxis,
 ) {
 
+    private val splitAxisLineAtTicks = ChromeAdaptation.SPLIT_AXIS_LINE_AT_TICKS in theme.chromeAdaptations
+    private val handDrawnPanelBorder = ChromeAdaptation.HAND_DRAWN_PANEL_BORDER in theme.chromeAdaptations
+
     override val transientState: TransientState = TransientState(
         hScaleBreaks,
         vScaleBreaks,
@@ -60,6 +66,23 @@ internal class SquareFrameOfReference(
     )
 
     override fun doDrawPanelBorder(parent: SvgComponent) {
+        if (handDrawnPanelBorder) {
+            val b = layoutInfo.geomContentBounds
+            val stroke = StrokeStyle(
+                theme.panel().borderColor(),
+                width = theme.panel().borderWidth(),
+                lineType = theme.panel().borderLineType(),
+            )
+            val o = PANEL_BORDER_OVERSHOOT_PX
+            // Four independent hand-drawn spines: each overshoots the corners a little so the strokes
+            // cross like a sketched frame (real xkcd), and each carries its own (constant, position-stable)
+            // seed so opposite sides don't wobble alike.
+            parent.add(theme.renderer.line(DoubleVector(b.left - o, b.top), DoubleVector(b.right + o, b.top), stroke, seed = 0))
+            parent.add(theme.renderer.line(DoubleVector(b.left - o, b.bottom), DoubleVector(b.right + o, b.bottom), stroke, seed = 1))
+            parent.add(theme.renderer.line(DoubleVector(b.left, b.top - o), DoubleVector(b.left, b.bottom + o), stroke, seed = 2))
+            parent.add(theme.renderer.line(DoubleVector(b.right, b.top - o), DoubleVector(b.right, b.bottom + o), stroke, seed = 3))
+            return
+        }
         val panelBorder = SvgRectElement(layoutInfo.geomContentBounds).apply {
             strokeColor().set(theme.panel().borderColor())
             strokeWidth().set(theme.panel().borderWidth())
@@ -86,6 +109,8 @@ internal class SquareFrameOfReference(
                 axisTheme = vAxisTheme,
                 labelAdjustments = labelAdjustments,
                 isDebugDrawing = isDebugDrawing,
+                renderer = theme.renderer,
+                splitLineAtTicks = splitAxisLineAtTicks,
             )
 
             val axisOrigin = marginsLayout.toAxisOrigin(
@@ -116,6 +141,8 @@ internal class SquareFrameOfReference(
                 axisTheme = hAxisTheme,
                 labelAdjustments = labelAdjustments,
                 isDebugDrawing = isDebugDrawing,
+                renderer = theme.renderer,
+                splitLineAtTicks = splitAxisLineAtTicks,
             )
 
             val axisOrigin = marginsLayout.toAxisOrigin(
@@ -146,6 +173,7 @@ internal class SquareFrameOfReference(
                 geomContentBounds = layoutInfo.geomContentBounds,
                 gridTheme = gridTheme,
                 panelTheme = theme.panel(),
+                renderer = theme.renderer,
             )
             val gridOrigin = layoutInfo.geomContentBounds.origin
             gridComponent.moveTo(gridOrigin)
@@ -170,6 +198,7 @@ internal class SquareFrameOfReference(
                 geomContentBounds = layoutInfo.geomContentBounds,
                 gridTheme = gridTheme,
                 panelTheme = theme.panel(),
+                renderer = theme.renderer,
             )
             val gridOrigin = layoutInfo.geomContentBounds.origin
             gridComponent.moveTo(gridOrigin)
@@ -236,6 +265,10 @@ internal class SquareFrameOfReference(
 
 
     companion object {
+        // How far each hand-drawn border spine runs past the corner, so the four strokes cross like a
+        // sketched frame instead of meeting exactly.
+        private const val PANEL_BORDER_OVERSHOOT_PX = 3.5
+
         private fun buildAxis(
             breaksData: BreaksData,
             info: AxisLayoutInfo,
@@ -244,6 +277,8 @@ internal class SquareFrameOfReference(
             axisTheme: AxisTheme,
             labelAdjustments: TickLabelAdjustments,
             isDebugDrawing: Boolean,
+            renderer: Renderer,
+            splitLineAtTicks: Boolean,
         ): SvgComponent {
             val axis = AxisComponent(
                 length = info.axisLength,
@@ -252,7 +287,9 @@ internal class SquareFrameOfReference(
                 labelAdjustments = labelAdjustments,
                 axisTheme = axisTheme,
                 hideAxis = hideAxis,
-                hideAxisBreaks = hideAxisBreaks
+                hideAxisBreaks = hideAxisBreaks,
+                renderer = renderer,
+                splitLineAtTicks = splitLineAtTicks,
             )
 
             if (isDebugDrawing) {

@@ -15,7 +15,6 @@ import org.jetbrains.letsPlot.core.plot.base.DataPointAesthetics
 import org.jetbrains.letsPlot.core.plot.base.aes.AestheticsBuilder
 import org.jetbrains.letsPlot.core.plot.base.coord.Coords
 import org.jetbrains.letsPlot.core.plot.base.pos.PositionAdjustments
-import org.jetbrains.letsPlot.datamodel.svg.dom.SvgLineElement
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
@@ -134,7 +133,7 @@ class QuantilesHelperTest {
         val pos = PositionAdjustments.identity()
         val coord = getCoordinateSystem(xValues)
         val quantilesHelper = QuantilesHelper(pos, coord, BogusContext, quantiles)
-        val quantileLines = quantilesHelper.getQuantileLineElements(
+        val quantileLines = quantilesHelper.getQuantileLineSegments(
             dataPoints,
             Aes.X,
             { p -> DoubleVector(p.x()!!, 0.0) },
@@ -145,7 +144,7 @@ class QuantilesHelperTest {
         } else {
             quantiles.size
         }
-        val actualLinesNumber = quantileLines.map { it as SvgLineElement }.map { it.x1().get() }.toSet().size
+        val actualLinesNumber = quantileLines.map { (_, geometry) -> geometry.first().x }.toSet().size
         assertEquals(expectedLinesNumber, actualLinesNumber, "Count of quantile line elements should be equal to size of quantiles parameter")
     }
 

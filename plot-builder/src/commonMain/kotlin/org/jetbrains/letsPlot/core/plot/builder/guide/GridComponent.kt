@@ -10,9 +10,9 @@ import org.jetbrains.letsPlot.commons.geometry.DoubleVector
 import org.jetbrains.letsPlot.commons.values.Color
 import org.jetbrains.letsPlot.core.plot.base.layout.Thickness
 import org.jetbrains.letsPlot.core.plot.base.render.linetype.LineType
-import org.jetbrains.letsPlot.core.plot.base.render.svg.StrokeDashArraySupport
+import org.jetbrains.letsPlot.core.plot.base.render.primitive.Renderer
+import org.jetbrains.letsPlot.core.plot.base.render.primitive.StrokeStyle
 import org.jetbrains.letsPlot.core.plot.base.render.svg.SvgComponent
-import org.jetbrains.letsPlot.core.plot.base.render.svg.lineString
 import org.jetbrains.letsPlot.core.plot.base.theme.PanelGridTheme
 import org.jetbrains.letsPlot.core.plot.base.theme.PanelTheme
 import org.jetbrains.letsPlot.datamodel.svg.dom.*
@@ -24,7 +24,10 @@ class GridComponent constructor(
     private val isOrthogonal: Boolean,
     geomContentBounds: DoubleRectangle,
     private val gridTheme: PanelGridTheme,
-    panelTheme: PanelTheme
+    panelTheme: PanelTheme,
+    // Used only via renderer.crisp (the grid never distorts — see buildGrid); passing the themed
+    // renderer just keeps `.crisp` reachable without wiring a separate CrispRenderer here.
+    private val renderer: Renderer,
 ) : SvgComponent() {
     private val container = SvgGElement()
     private val start = 0.0
@@ -89,26 +92,14 @@ class GridComponent constructor(
                 grid
             }
 
-        val elems = visibleGridLines.map { buildGridLine(it, lineWidth, lineColor, lineType) }
-        container.children().addAll(elems)
-    }
-
-    private fun buildGridLine(
-        lineString: List<DoubleVector>,
-        width: Double,
-        color: Color,
-        lineType: LineType
-    ): SvgNode {
-        val shapeElem: SvgShape = when {
-            lineString.size == 2 -> SvgLineElement(lineString[0].x, lineString[0].y, lineString[1].x, lineString[1].y)
-            lineString.size > 2 -> SvgPathElement(SvgPathDataBuilder().lineString(lineString).build())
-            else -> SvgPathElement()
+        val stroke = StrokeStyle(lineColor, width = lineWidth, lineType = lineType)
+        // The grid never distorts: distortion styles hide it by default (RendererStyles overlay), and if
+        // a user turns it back on it stays crisp for readability — so draw through renderer.crisp.
+        for (lineString in visibleGridLines) {
+            when {
+                lineString.size == 2 -> container.children().add(renderer.crisp.line(lineString[0], lineString[1], stroke))
+                lineString.size > 2 -> container.children().add(renderer.crisp.path(lineString, stroke))
+            }
         }
-
-        shapeElem.strokeColor().set(color)
-        shapeElem.strokeWidth().set(width)
-        StrokeDashArraySupport.apply(shapeElem, width, lineType)
-        shapeElem.fill().set(SvgColors.NONE)
-        return shapeElem as SvgNode
     }
 }

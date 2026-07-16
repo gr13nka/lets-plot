@@ -9,9 +9,12 @@ import org.jetbrains.letsPlot.commons.geometry.DoubleRectangle
 import org.jetbrains.letsPlot.commons.geometry.DoubleVector
 import org.jetbrains.letsPlot.commons.interval.DoubleSpan
 import org.jetbrains.letsPlot.core.plot.base.*
+import org.jetbrains.letsPlot.core.plot.base.aes.AesScaling
 import org.jetbrains.letsPlot.core.plot.base.geom.util.GeomHelper
 import org.jetbrains.letsPlot.core.plot.base.geom.util.GeomUtil
 import org.jetbrains.letsPlot.core.plot.base.geom.util.HintColorUtil
+import org.jetbrains.letsPlot.core.plot.base.geom.util.fillFor
+import org.jetbrains.letsPlot.core.plot.base.geom.util.outlineStrokeFor
 import org.jetbrains.letsPlot.core.plot.base.tooltip.GeomTargetCollector
 import org.jetbrains.letsPlot.core.plot.base.tooltip.TipLayoutHint
 import org.jetbrains.letsPlot.core.plot.base.render.LegendKeyElementFactory
@@ -37,7 +40,7 @@ class YDotplotGeom : DotplotGeom(), WithHeight {
         )
         if (!pointsWithBinWidth.any()) return
 
-//        val binWidthPx = pointsWithBinWidth.first().binwidth()!! * ctx.getUnitResolution(Aes.Y)
+        // Bin width in client px via coord.toClient, so it stays correct under flipped / non-linear coords.
         val binWidthPx = pointsWithBinWidth.first().let {
             val x = it.x()!!
             val y = it.y()!!
@@ -68,10 +71,10 @@ class YDotplotGeom : DotplotGeom(), WithHeight {
         ctx: GeomContext,
         binWidthPx: Double
     ) {
-        val dotHelper = DotHelper(pos, coord, ctx)
         val geomHelper = GeomHelper(pos, coord, ctx)
         val fullStackSize = dataPoints.sumOf { it.stacksize()!! }.toInt()
-        val stackSize = boundedStackSize(fullStackSize, coord, ctx, binWidthPx, !ctx.flipped)
+        // y-dots stack horizontally by default (capacity from width); when flipped they stack vertically
+        val stackSize = boundedStackSize(fullStackSize, coord, ctx, binWidthPx, capacityFromWidth = !ctx.flipped)
         var builtStackSize = 0
         for (p in dataPoints) {
             val groupStackSize = boundedStackSize(
@@ -79,15 +82,23 @@ class YDotplotGeom : DotplotGeom(), WithHeight {
                 coord,
                 ctx,
                 binWidthPx,
-                !ctx.flipped
+                capacityFromWidth = !ctx.flipped
             ) - builtStackSize
             val currentStackSize = if (stackDotsAcrossGroups()) stackSize else groupStackSize
             var dotId = -1
             for (i in 0 until groupStackSize) {
                 dotId = if (stackDotsAcrossGroups()) builtStackSize + i else i
                 val center = getDotCenter(p, dotId, currentStackSize, binWidthPx, ctx.flipped, geomHelper)
-                val path = dotHelper.createDot(p, center, dotSize * binWidthPx / 2)
-                root.add(path.rootGroup)
+                root.add(
+                    ctx.renderer.circle(
+                        center,
+                        dotSize * binWidthPx / 2,
+                        // Dot outline width comes from the `stroke` aes (not `size`), so strokeFor takes a custom scaler.
+                        stroke = outlineStrokeFor(p) { AesScaling.strokeWidth(it, DataPointAesthetics::stroke) },
+                        fill = fillFor(p),
+                        seed = 31 * p.index() + dotId
+                    )
+                )
             }
             buildHint(p, dotId, currentStackSize, ctx, geomHelper, binWidthPx)
             builtStackSize += groupStackSize

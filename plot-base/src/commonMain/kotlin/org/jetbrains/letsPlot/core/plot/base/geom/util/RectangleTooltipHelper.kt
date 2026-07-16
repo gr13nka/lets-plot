@@ -26,9 +26,9 @@ class RectangleTooltipHelper(
     private val helper = GeomHelper(pos, coord, ctx)
 
 
-    fun addTarget(p: DataPointAesthetics, rect: List<DoubleVector>) {
+    fun addPolygonTarget(p: DataPointAesthetics, points: List<DoubleVector>) {
         ctx.targetCollector.addPolygon(
-            rect,
+            points,
             p.index(),
             GeomTargetCollector.TooltipParams(
                 fillColor = fillColorMapper(p),
@@ -39,7 +39,7 @@ class RectangleTooltipHelper(
 
     }
 
-    fun addTarget(p: DataPointAesthetics, rect: DoubleRectangle) {
+    fun addRectangleTarget(p: DataPointAesthetics, rect: DoubleRectangle) {
         val objectRadius = with(rect) {
             if (ctx.flipped) {
                 height / 2.0
@@ -77,10 +77,22 @@ class RectangleTooltipHelper(
 
     }
 
-    fun collectRectangleTargets(aesthetics: Aesthetics, clientRectFactory: (DataPointAesthetics) -> DoubleRectangle?) {
+    fun registerClientRectTargets(aesthetics: Aesthetics, clientRectFactory: (DataPointAesthetics) -> DoubleRectangle?) {
         for (p in aesthetics.dataPoints()) {
             val clientRect = clientRectFactory(p) ?: continue
-            addTarget(p, clientRect)
+            addRectangleTarget(p, clientRect)
+        }
+    }
+
+    // For geoms whose rect factory returns data-space rectangles: toClient each here and register a
+    // straight (axis-aligned) rectangle target. The geom draws its own shape separately (Bar's bars,
+    // ErrorBar's whiskers) and calls this only to register tooltip targets, so it needn't build an
+    // SvgRectHelper just for the tooltip — the toClient happens inside here.
+    fun registerDataRectTargets(aesthetics: Aesthetics, dataRectFactory: (DataPointAesthetics) -> DoubleRectangle?) {
+        for (p in aesthetics.dataPoints()) {
+            val dataRect = dataRectFactory(p) ?: continue
+            val clientRect = helper.toClient(dataRect, p) ?: continue
+            addRectangleTarget(p, clientRect)
         }
     }
 

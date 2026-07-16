@@ -17,6 +17,8 @@ import org.jetbrains.letsPlot.core.plot.base.render.SvgRoot
 import org.jetbrains.letsPlot.core.plot.base.tooltip.NullGeomTargetCollector
 import org.jetbrains.letsPlot.core.plot.base.util.afterOrientation
 import org.jetbrains.letsPlot.core.plot.builder.coord.CoordProviders
+import org.jetbrains.letsPlot.core.plot.builder.defaultTheme.ThemeUtil
+import org.jetbrains.letsPlot.core.plot.builder.defaultTheme.values.ThemeOption
 import org.junit.Test
 import kotlin.math.round
 import kotlin.test.assertEquals
@@ -53,6 +55,7 @@ class YOrientationGeomBuildingTest {
                 )
             },
             flippedAxis = false,
+            theme = ThemeUtil.buildTheme(ThemeOption.Name.LP_MINIMAL),
             targetCollector = NullGeomTargetCollector
         )
 

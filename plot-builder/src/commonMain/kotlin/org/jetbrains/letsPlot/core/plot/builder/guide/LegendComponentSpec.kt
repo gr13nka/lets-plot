@@ -5,6 +5,8 @@
 
 package org.jetbrains.letsPlot.core.plot.builder.guide
 
+import org.jetbrains.letsPlot.core.plot.base.render.primitive.Renderer
+import org.jetbrains.letsPlot.core.plot.base.render.primitive.CrispRenderer
 import org.jetbrains.letsPlot.core.plot.base.theme.LegendTheme
 
 class LegendComponentSpec(
@@ -12,8 +14,9 @@ class LegendComponentSpec(
     internal val breaks: List<LegendBreak>,
     theme: LegendTheme,
     override val layout: LegendComponentLayout,
-    reverse: Boolean
-) : LegendBoxSpec(title, theme, reverse) {
+    reverse: Boolean,
+    renderer: Renderer = CrispRenderer,
+) : LegendBoxSpec(title, theme, reverse, renderer) {
 
     override fun hasSameContent(other: LegendBoxSpec): Boolean {
         if (other !is LegendComponentSpec) return false

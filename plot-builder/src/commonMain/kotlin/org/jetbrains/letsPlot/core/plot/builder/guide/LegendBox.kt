@@ -10,8 +10,9 @@ import org.jetbrains.letsPlot.commons.geometry.DoubleVector
 import org.jetbrains.letsPlot.commons.values.Color
 import org.jetbrains.letsPlot.core.plot.base.layout.TextJustification
 import org.jetbrains.letsPlot.core.plot.base.layout.TextJustification.Companion.applyJustification
+import org.jetbrains.letsPlot.core.plot.base.render.primitive.FillStyle
+import org.jetbrains.letsPlot.core.plot.base.render.primitive.StrokeStyle
 import org.jetbrains.letsPlot.core.plot.base.render.svg.Label
-import org.jetbrains.letsPlot.core.plot.base.render.svg.StrokeDashArraySupport
 import org.jetbrains.letsPlot.core.plot.base.render.svg.SvgComponent
 import org.jetbrains.letsPlot.core.plot.base.theme.LegendTheme
 import org.jetbrains.letsPlot.core.plot.builder.layout.PlotLabelSpecFactory
@@ -41,12 +42,18 @@ abstract class LegendBox : SvgComponent() {
 
     override fun buildComponent() {
         if (theme.showBackground()) {
-            add(SvgRectElement(spec.innerBounds).apply {
-                strokeColor().set(theme.backgroundColor())
-                strokeWidth().set(theme.backgroundStrokeWidth())
-                StrokeDashArraySupport.apply(this, theme.backgroundStrokeWidth(), theme.backgroundLineType())
-                fillColor().set(theme.backgroundFill())
-            })
+            // In xkcd mode the border width comes from the renderer style's theme overlay
+            // (RendererStyles), not from a branch here.
+            add(spec.renderer.rect(
+                spec.innerBounds,
+                stroke = StrokeStyle(
+                    color = theme.backgroundColor(),
+                    width = theme.backgroundStrokeWidth(),
+                    lineType = theme.backgroundLineType()
+                ),
+                fill = FillStyle(theme.backgroundFill()),
+                seed = 0 // single, position-stable element
+            ))
         }
 
         val innerGroup = SvgGElement()

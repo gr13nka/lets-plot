@@ -10,9 +10,10 @@ import org.jetbrains.letsPlot.core.plot.base.geom.util.ArrowSpec
 import org.jetbrains.letsPlot.core.plot.base.geom.util.GeomHelper
 import org.jetbrains.letsPlot.core.plot.base.geom.util.GeomUtil.toLocation
 import org.jetbrains.letsPlot.core.plot.base.geom.util.TargetCollectorHelper
+import org.jetbrains.letsPlot.core.plot.base.geom.util.buildLineWithArrow
 import org.jetbrains.letsPlot.core.plot.base.render.LegendKeyElementFactory
 import org.jetbrains.letsPlot.core.plot.base.render.SvgRoot
-import org.jetbrains.letsPlot.datamodel.svg.dom.SvgPathDataBuilder
+import kotlin.math.max
 
 class CurveGeom : GeomBase() {
 
@@ -39,27 +40,18 @@ class CurveGeom : GeomBase() {
     ) {
         val tooltipHelper = TargetCollectorHelper(GeomKind.CURVE, ctx)
         val geomHelper = GeomHelper(pos, coord, ctx)
-        val svgElementHelper = geomHelper.createSvgElementHelper()
-
-        svgElementHelper
-            .setStrokeAlphaEnabled(true)
-            .setInterpolation(SvgPathDataBuilder.Interpolation.BSPLINE)
-            .setArrowSpec(arrowSpec)
-            .setSpacer(spacer)
+        val svgElementHelper = geomHelper.createLineGeometryHelper()
 
         for (p in aesthetics.dataPoints()) {
             val start = p.toLocation(Aes.X, Aes.Y) ?: continue
             val end = p.toLocation(Aes.XEND, Aes.YEND) ?: continue
 
-            // Create curve geometry
-            // inverse angle because of using client coordinates
-            val (svg) = svgElementHelper.createCurve(start, end, curvature, -angle, ncp, p) ?: continue
-            root.add(svg)
-
-            // Add tooltips
-            val (_, geometry) = svgElementHelper
-                .createCurve(start, end, curvature, -angle, ncp = 15, p) ?: continue
-            tooltipHelper.addLine(geometry, p)
+            // inverse angle because of using client coordinates; dense sampling floor so the arc is
+            // smooth as straight segments and wobbles cleanly in xkcd mode.
+            val geometry = svgElementHelper.createCurveGeometry(start, end, curvature, -angle, max(ncp, 50), p) ?: continue
+            val (nodes, tooltipGeom) = buildLineWithArrow(ctx.renderer, geometry, p, arrowSpec, spacer)
+            nodes.forEach(root::add)
+            tooltipHelper.addLine(tooltipGeom, p)
         }
     }
 

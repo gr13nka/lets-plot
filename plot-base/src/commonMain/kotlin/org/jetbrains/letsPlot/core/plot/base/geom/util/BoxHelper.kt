@@ -5,7 +5,6 @@
 
 package org.jetbrains.letsPlot.core.plot.base.geom.util
 
-import org.jetbrains.letsPlot.commons.geometry.DoubleRectangle
 import org.jetbrains.letsPlot.commons.geometry.DoubleSegment
 import org.jetbrains.letsPlot.commons.geometry.DoubleVector
 import org.jetbrains.letsPlot.core.plot.base.*
@@ -16,62 +15,50 @@ import org.jetbrains.letsPlot.core.plot.base.render.SvgRoot
 import org.jetbrains.letsPlot.datamodel.svg.dom.*
 
 object BoxHelper {
-    fun buildBoxes(
-        root: SvgRoot,
-        aesthetics: Aesthetics,
-        pos: PositionAdjustment,
-        coord: CoordinateSystem,
-        ctx: GeomContext,
-        rectFactory: (DataPointAesthetics) -> DoubleRectangle?
-    ) {
-        // rectangles
-        val helper = RectanglesHelper(aesthetics, pos, coord, ctx, rectFactory)
-        val rectangles = helper.createRectangles()
-        rectangles.forEach { root.add(it) }
-    }
+    // The full box width along X in client px: WIDTH aes scaled by the width-unit resolution
+    fun boxWidth(p: DataPointAesthetics, widthUnit: DimensionUnit, geomHelper: GeomHelper): Double? =
+        p.finiteOrNull(Aes.WIDTH)?.let { it * geomHelper.getUnitResolution(widthUnit, Aes.X) }
 
-    fun buildMidlines(
+    fun buildStraightMidlines(
         root: SvgRoot,
         aesthetics: Aesthetics,
-        xAes: Aes<Double>,
-        middleAes: Aes<Double>,
-        sizeAes: Aes<Double>,
         widthUnit: DimensionUnit,
         geomHelper: GeomHelper,
         fatten: Double
     ) {
-        val elementHelper = geomHelper.createSvgElementHelper()
+        // Boxplot midline: the box is a px-space clientRect and cannot curve, so the midline stays
+        // straight to match. (buildCurvedMidlines below follows the coord, arcing with the crossbar's box.)
+        val elementHelper = geomHelper.createLineGeometryHelper().withoutResampling()
         for (p in aesthetics.dataPoints()) {
-            val x = p.finiteOrNull(xAes) ?: continue
-            val middle = p.finiteOrNull(middleAes) ?: continue
-            val w = p.finiteOrNull(sizeAes) ?: continue
+            val x = p.finiteOrNull(Aes.X) ?: continue
+            val middle = p.finiteOrNull(Aes.MIDDLE) ?: continue
+            val width = boxWidth(p, widthUnit, geomHelper) ?: continue
 
-            val width = w * geomHelper.getUnitResolution(widthUnit, xAes)
-
-            val (line, _) = elementHelper.createLine(
+            val geometry = elementHelper.createLineGeometry(
                 DoubleVector(x - width / 2, middle),
                 DoubleVector(x + width / 2, middle),
                 p
-            ) { AesScaling.strokeWidth(it) * fatten } ?: continue
+            ) ?: continue
 
-            root.add(line)
+            val stroke = outlineStrokeFor(p).copy(width = AesScaling.strokeWidth(p) * fatten)
+            root.add(geomHelper.ctx.renderer.path(geometry, stroke, closed = false, seed = p.index()))
         }
     }
 
-    fun buildMidlines(
+    fun buildCurvedMidlines(
         aesthetics: Aesthetics,
         fatten: Double,
         geomHelper: GeomHelper,
         lineFactory: (DataPointAesthetics) -> DoubleSegment?,
         handler: (DataPointAesthetics, SvgNode, DoubleSegment) -> Unit
     ) {
-        val elementHelper = geomHelper.createSvgElementHelper()
+        val elementHelper = geomHelper.createLineGeometryHelper()
         aesthetics.dataPoints().forEach { p ->
             lineFactory(p)?.let { segment ->
-                val (svgNode, line) = elementHelper.createLine(segment, p) { AesScaling.strokeWidth(it) * fatten }
+                val line = elementHelper.createPaddedLineGeometry(segment.start, segment.end, p)
                     ?: return@let
-
-                handler(p, svgNode, DoubleSegment(line[0], line[1]))
+                val stroke = outlineStrokeFor(p) { AesScaling.strokeWidth(it) * fatten }
+                handler(p, lineNode(geomHelper.ctx.renderer, line, stroke, seed = p.index()), DoubleSegment(line[0], line[1]))
             }
         }
     }

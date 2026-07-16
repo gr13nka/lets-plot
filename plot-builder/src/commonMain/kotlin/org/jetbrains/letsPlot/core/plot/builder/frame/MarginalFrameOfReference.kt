@@ -13,6 +13,7 @@ import org.jetbrains.letsPlot.core.interact.UnsupportedInteractionException
 import org.jetbrains.letsPlot.core.plot.base.CoordinateSystem
 import org.jetbrains.letsPlot.core.plot.base.PlotContext
 import org.jetbrains.letsPlot.core.plot.base.render.svg.SvgComponent
+import org.jetbrains.letsPlot.core.plot.base.theme.Theme
 import org.jetbrains.letsPlot.core.plot.base.tooltip.GeomTargetCollector
 import org.jetbrains.letsPlot.core.plot.builder.ComponentTransientState
 import org.jetbrains.letsPlot.core.plot.builder.FrameOfReference
@@ -21,6 +22,7 @@ import org.jetbrains.letsPlot.datamodel.svg.dom.SvgRectElement
 
 internal class MarginalFrameOfReference(
     private val plotContext: PlotContext,
+    private val theme: Theme,
     private val geomBounds: DoubleRectangle,
     private val adjustedDomain: DoubleRectangle,
     private val coord: CoordinateSystem,
@@ -52,6 +54,7 @@ internal class MarginalFrameOfReference(
             targetCollector,
             plotBackground,
             DoubleRectangle(DoubleVector.ZERO, DoubleVector.ZERO),
+            renderer = theme.renderer,
         )
 
         layerComponent.moveTo(geomBounds.origin)

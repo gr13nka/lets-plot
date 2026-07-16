@@ -20,6 +20,7 @@ import org.jetbrains.letsPlot.commons.values.Colors
 import org.jetbrains.letsPlot.commons.values.Colors.mimicTransparency
 import org.jetbrains.letsPlot.core.plot.base.PlotContext
 import org.jetbrains.letsPlot.core.plot.base.render.linetype.NamedLineType
+import org.jetbrains.letsPlot.core.plot.base.render.primitive.Renderer
 import org.jetbrains.letsPlot.core.plot.base.theme.AxisTheme
 import org.jetbrains.letsPlot.core.plot.base.theme.TooltipsTheme
 import org.jetbrains.letsPlot.core.plot.base.tooltip.*
@@ -55,6 +56,8 @@ internal class TooltipRenderer(
     private val plotBackground: Color,
     private val styleSheet: StyleSheet,
     private val plotContext: PlotContext,
+    renderer: Renderer,
+    handDrawnOutline: Boolean,
     mouseEventPeer: MouseEventPeer
 ) : Disposable {
     private val regs = CompositeRegistration()
@@ -82,7 +85,7 @@ internal class TooltipRenderer(
             parent = SvgGElement().also { myTooltipLayer.children().add(it) }
         )
         tooltipStorage = RetainableComponents(
-            itemFactory = { TooltipBox(styleSheet) },
+            itemFactory = { TooltipBox(styleSheet, renderer, handDrawnOutline) },
             parent = SvgGElement().also { myTooltipLayer.children().add(it) }
         )
 

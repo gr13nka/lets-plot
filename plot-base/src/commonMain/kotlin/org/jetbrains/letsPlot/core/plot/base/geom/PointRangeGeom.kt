@@ -12,14 +12,14 @@ import org.jetbrains.letsPlot.core.plot.base.aes.AesScaling
 import org.jetbrains.letsPlot.core.plot.base.geom.legend.CompositeLegendKeyElementFactory
 import org.jetbrains.letsPlot.core.plot.base.geom.legend.VLineLegendKeyElementFactory
 import org.jetbrains.letsPlot.core.plot.base.geom.util.GeomHelper
-import org.jetbrains.letsPlot.core.plot.base.geom.util.GeomHelper.Companion.decorate
 import org.jetbrains.letsPlot.core.plot.base.geom.util.GeomUtil
 import org.jetbrains.letsPlot.core.plot.base.geom.util.HintColorUtil
 import org.jetbrains.letsPlot.core.plot.base.geom.util.RectangleTooltipHelper
+import org.jetbrains.letsPlot.core.plot.base.geom.util.lineNode
+import org.jetbrains.letsPlot.core.plot.base.geom.util.strokeFor
 import org.jetbrains.letsPlot.core.plot.base.render.LegendKeyElementFactory
 import org.jetbrains.letsPlot.core.plot.base.render.SvgRoot
 import org.jetbrains.letsPlot.core.plot.base.render.point.PointShapeSvg
-import org.jetbrains.letsPlot.datamodel.svg.dom.SvgRectElement
 
 class PointRangeGeom : GeomBase() {
     var fattenMidPoint: Double = DEF_FATTEN
@@ -38,8 +38,7 @@ class PointRangeGeom : GeomBase() {
         ctx: GeomContext
     ) {
         val geomHelper = GeomHelper(pos, coord, ctx)
-        val helper = geomHelper.createSvgElementHelper()
-        helper.setStrokeAlphaEnabled(true)
+        val helper = geomHelper.createLineGeometryHelper()
         val colorsByDataPoint = HintColorUtil.createColorMarkerMapper(GeomKind.POINT_RANGE, ctx)
         val tooltipHelper = RectangleTooltipHelper(
             pos = pos,
@@ -59,8 +58,8 @@ class PointRangeGeom : GeomBase() {
             // vertical line
             val start = DoubleVector(x, ymin)
             val end = DoubleVector(x, ymax)
-            val (svg) = helper.createLine(start, end, p, strokeScaler = AesScaling::lineWidth) ?: continue
-            root.add(svg)
+            val geometry = helper.createPaddedLineGeometry(start, end, p) ?: continue
+            root.add(lineNode(ctx.renderer, geometry, strokeFor(p, strokeScaler = AesScaling::lineWidth), seed = p.index()))
 
             // mid-point
             val y = p.finiteOrNull(Aes.Y) ?: continue
@@ -68,19 +67,9 @@ class PointRangeGeom : GeomBase() {
             val o = PointShapeSvg.create(shape, location, p, fattenMidPoint)
             root.add(wrap(o))
         }
-        // tooltip
-        /*
-          Unlike the cases of CrossBarGeom and ErrorBarGeom, it is inconvenient to use RectanglesHelper here.
-          RectanglesHelper uses a geometry factory that returns rectangles in data coordinates, but clientRectByDataPoint() returns client coordinates.
-          Otherwise it is difficult to correctly calculate the width of the rectangle bounding the geometry, especially when the geometry is rotated.
-        */
-        aesthetics.dataPoints().forEach { p ->
-            clientRectByDataPoint(geomHelper, fattenMidPoint)(p)?.let { clientRect ->
-                val svgRect = SvgRectElement(clientRect)
-                decorate(svgRect, p)
-                tooltipHelper.addTarget(p, clientRect)
-            }
-        }
+        // tooltip - the factory returns client coordinates (a pixel-width rect that accounts for
+        // rotation), so the helper draws nothing and only reports the rect for hit-testing.
+        tooltipHelper.registerClientRectTargets(aesthetics, clientRectByDataPoint(geomHelper, fattenMidPoint))
     }
 
     private fun clientRectByDataPoint(

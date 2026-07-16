@@ -33,8 +33,9 @@ class BracketGeom : TextGeom() {
             bracketBuilder(linesHelper, bracketShorten, tipLengthUnit)
         )
         val clientPathData = linesHelper.toClientPaths(pathData)
-        val svgPath = linesHelper.renderPaths(clientPathData, filled = false)
-        root.appendNodes(svgPath)
+        for (path in clientPathData) {
+            root.add(ctx.renderer.path(path.coordinates, strokeFor(path.aes), closed = false, seed = path.aes.index()))
+        }
 
         // Label
         val textHelper = TextHelper(aesthetics, pos, coord, ctx)

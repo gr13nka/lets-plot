@@ -10,6 +10,7 @@ import org.jetbrains.letsPlot.core.plot.base.*
 import org.jetbrains.letsPlot.core.plot.base.geom.legend.VLineLegendKeyElementFactory
 import org.jetbrains.letsPlot.core.plot.base.geom.util.GeomHelper
 import org.jetbrains.letsPlot.core.plot.base.geom.util.TargetCollectorHelper
+import org.jetbrains.letsPlot.core.plot.base.geom.util.strokeFor
 import org.jetbrains.letsPlot.core.plot.base.render.LegendKeyElementFactory
 import org.jetbrains.letsPlot.core.plot.base.render.SvgRoot
 
@@ -27,9 +28,7 @@ class VLineGeom : GeomBase() {
     ) {
         val tooltipHelper = TargetCollectorHelper(GeomKind.V_LINE, ctx)
         val geomHelper = GeomHelper(pos, coord, ctx)
-        val helper = geomHelper.createSvgElementHelper()
-        helper.setStrokeAlphaEnabled(true)
-        helper.setResamplingEnabled(!coord.isLinear)
+        val helper = geomHelper.createLineGeometryHelper()
 
         val viewPort = overallAesBounds(ctx)
 
@@ -41,10 +40,18 @@ class VLineGeom : GeomBase() {
             val start = DoubleVector(intercept, viewPort.top)
             val end = DoubleVector(intercept, viewPort.bottom)
 
-            val (svg, geometry) = helper.createLine(start, end, p) ?: continue
-
-            tooltipHelper.addLine(geometry, p)
-            root.add(svg)
+            if (coord.isLinear) {
+                val c1 = geomHelper.toClient(start, p) ?: continue
+                val c2 = geomHelper.toClient(end, p) ?: continue
+                root.add(ctx.renderer.line(c1, c2, strokeFor(p), seed = p.index()))
+                tooltipHelper.addLine(listOf(c1, c2), p)
+            } else {
+                // Non-linear coords: a constant-x line is curved in client space, so resample into a
+                // path (renderer.line is straight-only).
+                val geometry = helper.createLineGeometry(start, end, p) ?: continue
+                tooltipHelper.addLine(geometry, p)
+                root.add(ctx.renderer.path(geometry, strokeFor(p), closed = false, seed = p.index()))
+            }
         }
     }
 

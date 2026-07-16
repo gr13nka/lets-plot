@@ -10,6 +10,7 @@ import org.jetbrains.letsPlot.core.plot.base.geom.util.ArrowSpec
 import org.jetbrains.letsPlot.core.plot.base.geom.util.GeomHelper
 import org.jetbrains.letsPlot.core.plot.base.geom.util.GeomUtil.toLocation
 import org.jetbrains.letsPlot.core.plot.base.geom.util.TargetCollectorHelper
+import org.jetbrains.letsPlot.core.plot.base.geom.util.buildLineWithArrow
 import org.jetbrains.letsPlot.core.plot.base.render.LegendKeyElementFactory
 import org.jetbrains.letsPlot.core.plot.base.render.SvgRoot
 
@@ -34,21 +35,19 @@ class SegmentGeom : GeomBase() {
     ) {
         val tooltipHelper = TargetCollectorHelper(GeomKind.SEGMENT, ctx)
         val geomHelper = GeomHelper(pos, coord, ctx)
-        val svgHelper = geomHelper
-            .createSvgElementHelper()
-            .setStrokeAlphaEnabled(true)
-            .setSpacer(spacer)
-            .setResamplingEnabled(!coord.isLinear && !flat)
-            .setArrowSpec(arrowSpec)
-
+        val helper = geomHelper.createLineGeometryHelper()
+        if (flat) helper.withoutResampling()
 
         for (p in aesthetics.dataPoints()) {
             val start = p.toLocation(Aes.X, Aes.Y) ?: continue
             val end = p.toLocation(Aes.XEND, Aes.YEND) ?: continue
-            val (svg, geometry) = svgHelper.createLine(start, end, p) ?: continue
 
+            val clientLine = helper.createLineGeometry(start, end, p) ?: continue
+            if (clientLine.size < 2) continue
+
+            val (nodes, geometry) = buildLineWithArrow(ctx.renderer, clientLine, p, arrowSpec, spacer)
+            nodes.forEach { root.add(it) }
             tooltipHelper.addLine(geometry, p)
-            root.add(svg)
         }
     }
 

@@ -13,8 +13,9 @@ import org.jetbrains.letsPlot.datamodel.svg.dom.SvgTransform
 import org.jetbrains.letsPlot.datamodel.svg.dom.SvgUtils
 
 object AestheticsUtil {
-    //affects bar, smooth, area and ribbon
-    internal const val ALPHA_CONTROLS_BOTH = false
+    // Default for `applyAlphaToAll`: when false, the `alpha` aesthetic fades fill only and the
+    // stroke stays opaque (bar/smooth/area/ribbon rely on this); pass true to fade the stroke too.
+    internal const val DEFAULT_APPLY_ALPHA_TO_ALL = false
 
     fun fill(filled: Boolean, solid: Boolean, p: DataPointAesthetics): Color {
         if (filled) {
@@ -73,17 +74,4 @@ object AestheticsUtil {
 
     fun textSize(p: DataPointAesthetics) = AesScaling.textSize(p)
 
-    fun updateStroke(shape: SvgShape, p: DataPointAesthetics, applyAlpha: Boolean) {
-        shape.strokeColor().set(p.color())
-        if (p.alpha() != AesInitValue.DEFAULT_ALPHA && applyAlpha) {
-            shape.strokeOpacity().set(p.alpha())
-        }
-    }
-
-    fun updateFill(shape: SvgShape, p: DataPointAesthetics) {
-        shape.fillColor().set(p.fill())
-        if (p.alpha() != AesInitValue.DEFAULT_ALPHA) {
-            shape.fillOpacity().set(p.alpha())
-        }
-    }
 }

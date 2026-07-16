@@ -19,6 +19,7 @@ import org.jetbrains.letsPlot.core.interact.feedback.PanGeomFeedback
 import org.jetbrains.letsPlot.core.interact.feedback.RollbackAllChangesFeedback
 import org.jetbrains.letsPlot.core.interact.feedback.WheelZoomFeedback
 import org.jetbrains.letsPlot.core.plot.base.PlotContext
+import org.jetbrains.letsPlot.core.plot.base.theme.ChromeAdaptation
 import org.jetbrains.letsPlot.core.plot.base.theme.Theme
 import org.jetbrains.letsPlot.core.plot.base.tooltip.GeomTargetLocator
 import org.jetbrains.letsPlot.core.plot.base.tooltip.HorizontalAxisTooltipPosition
@@ -61,6 +62,8 @@ internal class PlotInteractor(
             theme.plot().backgroundFill(),
             styleSheet,
             plotContext,
+            theme.renderer,
+            ChromeAdaptation.HAND_DRAWN_TOOLTIP_OUTLINE in theme.chromeAdaptations,
             mouseEventPeer
         )
         reg.add(Registration.from(tooltipRenderer))

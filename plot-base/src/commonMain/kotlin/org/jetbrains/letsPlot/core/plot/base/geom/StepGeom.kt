@@ -40,20 +40,19 @@ class StepGeom : LineGeom() {
         ctx: GeomContext
     ) {
         val dataPoints = dataPoints(aesthetics)
-        val linesHelper = LinesHelper(pos, coord, ctx)
+        val linesHelper = LinesHelper(pos, coord, ctx, flat = true)
 
-        val pathDataList = linesHelper.createPaths(dataPoints, toLocationFor(overallAesBounds(ctx)))
+        val pathDataList = linesHelper.createStraightPathData(dataPoints, toLocationFor(overallAesBounds(ctx)))
         val horizontalThenVertical = when {
             !ctx.flipped && myDirection == Direction.HV -> true
             ctx.flipped && myDirection == Direction.VH -> true
             else -> false
         }
-        val linePaths = linesHelper.createSteps(pathDataList, horizontalThenVertical)
+        val stepsPaths = linesHelper.createStepsData(pathDataList, horizontalThenVertical)
 
-        root.appendNodes(linePaths)
+        linesHelper.renderPaths(root, stepsPaths)
 
-        val targetCollectorHelper = TargetCollectorHelper(GeomKind.STEP, ctx)
-        targetCollectorHelper.addPaths(pathDataList)
+        TargetCollectorHelper(GeomKind.STEP, ctx).addPaths(pathDataList)
     }
 
     private fun toLocationFor(viewPort: DoubleRectangle): (DataPointAesthetics) -> DoubleVector? {

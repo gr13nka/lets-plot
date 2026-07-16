@@ -16,7 +16,6 @@ import org.jetbrains.letsPlot.core.plot.base.pos.PositionAdjustments
 import org.jetbrains.letsPlot.core.plot.base.render.SvgRoot
 import org.jetbrains.letsPlot.core.plot.base.tooltip.GeomTargetCollector
 import org.jetbrains.letsPlot.core.plot.base.tooltip.NullGeomTargetCollector
-import org.jetbrains.letsPlot.datamodel.svg.dom.SvgGElement
 import org.jetbrains.letsPlot.datamodel.svg.dom.SvgNode
 import org.jetbrains.letsPlot.datamodel.svg.dom.SvgPathElement
 import kotlin.test.Test
@@ -40,10 +39,10 @@ class AreaGeomTest {
 
         AreaGeom().build(svgRoot, aes, PositionAdjustments.identity(), coord, EmptyGeomContext())
 
-        val svgPath = (svgRoot.content[0] as SvgGElement).children()[0] as SvgPathElement
+        val svgPath = svgRoot.content[0] as SvgPathElement
         val svgPathStr = svgPath.d().get().toString().trim()
             .replace(".0 ", " ") // remove trailing zeros
-        val svgPathExpectedStr = "M0 100 L0 100 L200 300 L400 0 L400 500 L200 500 L0 500 Z"
+        val svgPathExpectedStr = "M0 100 L200 300 L400 0 L400 500 L200 500 L0 500 Z"
         assertEquals(svgPathExpectedStr, svgPathStr)
     }
 }

@@ -31,17 +31,14 @@ open class PathGeom : GeomBase() {
         ctx: GeomContext
     ) {
         val dataPoints = dataPoints(aesthetics)
-        val linesHelper = LinesHelper(pos, coord, ctx, ::addNulls)
-        linesHelper.setResamplingEnabled(!coord.isLinear && !flat)
+        val linesHelper = LinesHelper(pos, coord, ctx, flat, ::addNulls)
 
         val closePath = linesHelper.meetsRadarPlotReq()
         val pathData = linesHelper.createPathData(dataPoints, GeomUtil.TO_LOCATION_X_Y, closePath)
 
-        val targetCollectorHelper = TargetCollectorHelper(GeomKind.PATH, ctx)
-        targetCollectorHelper.addVariadicPaths(pathData)
+        TargetCollectorHelper(GeomKind.PATH, ctx).addVariadicPaths(pathData)
 
-        val svgPath = linesHelper.renderPaths(pathData, filled = false)
-        root.appendNodes(svgPath)
+        linesHelper.renderPaths(root, pathData)
     }
 
     companion object {

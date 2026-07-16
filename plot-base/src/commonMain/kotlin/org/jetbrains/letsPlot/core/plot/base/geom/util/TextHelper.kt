@@ -97,7 +97,7 @@ class TextHelper(
         labelNudge: (location: DoubleVector, size: DoubleVector) -> DoubleVector = DEF_LABEL_NUDGE
     ): SvgGElement {
         return if (labelOptions == null) {
-            TextUtil.textComponentFactory(p, location, text, ctx, flipAngle, sizeUnitRatio, boundsCenter, labelNudge)
+            TextUtil.textComponent(p, location, text, ctx, flipAngle, sizeUnitRatio, boundsCenter, labelNudge)
         } else {
             TextUtil.labelComponentFactory(p, location, text, ctx, labelOptions!!, flipAngle, sizeUnitRatio, boundsCenter, labelNudge)
         }

@@ -27,7 +27,11 @@ object ThemeUtil {
     internal fun getThemeValues(themeName: String, userOptions: Map<String, Any> = emptyMap()): Map<String, Any> {
         val baselineValues = ThemeValues.forName(themeName)
 
-        val effectiveOptions = baselineValues + userOptions
+        // The renderer choice implies chrome defaults (xkcd fonts, legend border), merged under
+        // userOptions so explicit user settings win over the renderer's look.
+        val rendererOverlay = RendererStyles.forName(userOptions[ThemeOption.RENDERER] as? String).themeOverlay
+
+        val effectiveOptions = (baselineValues + rendererOverlay).mergeWith(userOptions)
 
         if (themeName == ThemeOption.Name.LP_NONE) {
             // Not apply flavor to the 'none' theme

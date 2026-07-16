@@ -6,26 +6,19 @@
 package org.jetbrains.letsPlot.core.plot.base.geom.util
 
 import org.jetbrains.letsPlot.commons.geometry.DoubleRectangle
-import org.jetbrains.letsPlot.commons.geometry.DoubleSegment
 import org.jetbrains.letsPlot.commons.geometry.DoubleVector
 import org.jetbrains.letsPlot.commons.intern.typedGeometry.algorithms.AdaptiveResampler
 import org.jetbrains.letsPlot.commons.intern.typedGeometry.algorithms.AdaptiveResampler.Companion.resample
-import org.jetbrains.letsPlot.commons.intern.util.ArrowSupport
+import org.jetbrains.letsPlot.core.commons.geometry.PolylineSimplifier
 import org.jetbrains.letsPlot.commons.intern.util.curve
 import org.jetbrains.letsPlot.commons.intern.util.padLineString
-import org.jetbrains.letsPlot.commons.values.Color
 import org.jetbrains.letsPlot.core.plot.base.*
 import org.jetbrains.letsPlot.core.plot.base.aes.AesScaling
-import org.jetbrains.letsPlot.core.plot.base.aes.AestheticsUtil
-import org.jetbrains.letsPlot.core.plot.base.aes.AestheticsUtil.ALPHA_CONTROLS_BOTH
+import org.jetbrains.letsPlot.core.plot.base.aes.AestheticsUtil.DEFAULT_APPLY_ALPHA_TO_ALL
 import org.jetbrains.letsPlot.core.plot.base.geom.DimensionUnit
 import org.jetbrains.letsPlot.core.plot.base.geom.DimensionUnit.*
-import org.jetbrains.letsPlot.core.plot.base.geom.util.ArrowSpec.Companion.toArrowAes
-import org.jetbrains.letsPlot.core.plot.base.geom.util.ArrowSpec.Type.CLOSED
-import org.jetbrains.letsPlot.core.plot.base.render.svg.StrokeDashArraySupport
-import org.jetbrains.letsPlot.core.plot.base.render.svg.lineString
-import org.jetbrains.letsPlot.datamodel.svg.dom.*
-import org.jetbrains.letsPlot.datamodel.svg.dom.SvgPathDataBuilder.Interpolation
+import org.jetbrains.letsPlot.core.plot.base.render.primitive.applyStyles
+import org.jetbrains.letsPlot.datamodel.svg.dom.SvgShape
 import org.jetbrains.letsPlot.datamodel.svg.dom.slim.SvgSlimShape
 import kotlin.math.cos
 import kotlin.math.sin
@@ -67,22 +60,6 @@ open class GeomHelper(
         return pos.translate(location, p, ctx)
     }
 
-    fun toClientPoint(
-        p: DataPointAesthetics,
-        aesMapper: (DataPointAesthetics) -> DoubleVector?
-    ): DoubleVector? {
-        val location = aesMapper(p) ?: return null
-        return toClient(location, p)
-    }
-
-    internal fun toClientRect(
-        p: DataPointAesthetics,
-        aesMapper: (DataPointAesthetics) -> DoubleRectangle?
-    ): DoubleRectangle? {
-        val r = aesMapper(p) ?: return null
-        return toClient(r, p)
-    }
-
     private fun adjust(
         r: DoubleRectangle,
         p: DataPointAesthetics,
@@ -101,108 +78,61 @@ open class GeomHelper(
         }
     }
 
-    fun createSvgElementHelper(): SvgElementHelper {
-        return SvgElementHelper(::toClient)
+    fun createLineGeometryHelper(): LineGeometryHelper {
+        return LineGeometryHelper(::toClient, coord)
     }
 
-    class SvgElementHelper(
-        private val toClient: (DoubleVector, DataPointAesthetics) -> DoubleVector? = { v, _ -> v }
+    // Pure client-space geometry factory: data-space endpoints in, client-space polylines out
+    class LineGeometryHelper(
+        private val toClient: (DoubleVector, DataPointAesthetics) -> DoubleVector? = { v, _ -> v },
+        private val coord: CoordinateSystem? = null
     ) {
-        private var myGeometryWithPadding: Boolean = true
-        private var myNoSvg: Boolean = false
-        private var myInterpolation: Interpolation? = null
-        private var myArrowSpec: ArrowSpec? = null
-        private var myStrokeAlphaEnabled = false
-        private var myResamplingEnabled = false
-        private var myResamplingPrecision = AdaptiveResampler.PIXEL_PRECISION
-        private var mySpacer: Double = 0.0
-        private var myDebugRendering = false
+        // Follow the coordinate system by default (no coord = standalone client-space helper = straight).
+        private var myResamplingEnabled = coord?.isLinear == false
+        private val myResamplingPrecision = AdaptiveResampler.PIXEL_PRECISION
 
-        fun setStrokeAlphaEnabled(b: Boolean) = apply { myStrokeAlphaEnabled = b }
-        fun setResamplingEnabled(b: Boolean) = apply { myResamplingEnabled = b }
-        fun setArrowSpec(arrowSpec: ArrowSpec?) = apply { myArrowSpec = arrowSpec }
-        fun setSpacer(spacer: Double) = apply { mySpacer = spacer }
-        fun setInterpolation(interpolation: Interpolation) = apply { myInterpolation = interpolation }
-        fun setResamplingPrecision(precision: Double) = apply { myResamplingPrecision = precision }
-        fun noSvg() = apply { myNoSvg = true }
-        fun debugRendering(value: Boolean) = apply { myDebugRendering = value }
-        fun geometryWithPadding(value: Boolean) = apply { myGeometryWithPadding = value }
+        // Opt out of the follow-the-coord default: keep geometry straight even in bending coords.
+        fun withoutResampling() = apply { myResamplingEnabled = false }
 
-        fun createRectangle(
-            rect: DoubleRectangle,
-            p: DataPointAesthetics,
-            strokeScaler: (DataPointAesthetics) -> Double = AesScaling::strokeWidth
-        ): Pair<SvgNode, List<DoubleVector>>? {
-            val lineString = createLineGeometry(rect.points, p) ?: return null
-            val svgElement = renderSvgElement(p, lineString, strokeScaler, filled = true) ?: return null
-            val geometry = takeGeometry(lineString, p)
-
-            return svgElement to geometry
-        }
-
-        fun createCurve(
+        // Raw client-space curve, no padding — buildLineWithArrow / livemap own the arrow + padding.
+        fun createCurveGeometry(
             start: DoubleVector,
             end: DoubleVector,
             curvature: Double,
             angle: Double,
             ncp: Int,
-            p: DataPointAesthetics,
-            strokeScaler: (DataPointAesthetics) -> Double = AesScaling::strokeWidth
-        ): Pair<SvgNode, List<DoubleVector>>? {
-            if (start == end) {
-                return null
-            }
-            @Suppress("NAME_SHADOWING")
-            val start = toClient(start, p) ?: return null
-
-            @Suppress("NAME_SHADOWING")
-            val end = toClient(end, p) ?: return null
-
-            val lineString = curve(start, end, curvature, angle, ncp)
-
-            val svgElement = renderSvgElement(p, lineString, strokeScaler, filled = false) ?: return null
-            val geometry = takeGeometry(lineString, p)
-
-            return svgElement to geometry
+            p: DataPointAesthetics
+        ): List<DoubleVector>? {
+            if (start == end) return null
+            val clientStart = toClient(start, p) ?: return null
+            val clientEnd = toClient(end, p) ?: return null
+            return curve(clientStart, clientEnd, curvature, angle, ncp)
         }
 
-        fun createLine(
-            segment: DoubleSegment,
-            p: DataPointAesthetics,
-            strokeScaler: (DataPointAesthetics) -> Double = AesScaling::strokeWidth
-        ): Pair<SvgNode, List<DoubleVector>>? {
-            return createLine(segment.start, segment.end, p, strokeScaler)
-        }
-
-        fun createLine(
+        // Padded client-space line: the polyline pulled back by the target start/end spacing.
+        fun createPaddedLineGeometry(
             start: DoubleVector,
             end: DoubleVector,
             p: DataPointAesthetics,
-            strokeScaler: (DataPointAesthetics) -> Double = AesScaling::strokeWidth
-        ): Pair<SvgNode, List<DoubleVector>>? {
+        ): List<DoubleVector>? {
             val lineString = createLineGeometry(start, end, p) ?: return null
-            val svgElement = renderSvgElement(p, lineString, strokeScaler, filled = false) ?: return null
-            val geometry = takeGeometry(lineString, p)
-
-            return svgElement to geometry
+            if (lineString.size < 2) return null
+            return padLineString(lineString, AesScaling.targetStartSize(p), AesScaling.targetEndSize(p))
         }
 
-        fun createSpoke(
+        // Padded client-space spoke polyline
+        fun createSpokeGeometry(
             base: DoubleVector,
             angle: Double,
             radius: Double,
             pivot: Double,
             p: DataPointAesthetics,
-            strokeScaler: (DataPointAesthetics) -> Double = AesScaling::strokeWidth
-        ): Pair<SvgNode, List<DoubleVector>>? {
-            val spoke = DoubleVector(radius * cos(angle), radius * sin(angle))
-            val start = base.subtract(spoke.mul(pivot))
-            val end = base.add(spoke.mul(1 - pivot))
-
-            return createLine(start, end, p, strokeScaler)
+        ): List<DoubleVector>? {
+            val (start, end) = spokeEndpoints(base, angle, radius, pivot)
+            return createPaddedLineGeometry(start, end, p)
         }
 
-        private fun createLineGeometry(
+        internal fun createLineGeometry(
             start: DoubleVector,
             end: DoubleVector,
             aes: DataPointAesthetics,
@@ -210,7 +140,7 @@ open class GeomHelper(
             return createLineGeometry(listOf(start, end), aes)
         }
 
-        private fun createLineGeometry(
+        internal fun createLineGeometry(
             points: List<DoubleVector>,
             aes: DataPointAesthetics,
         ): List<DoubleVector>? {
@@ -221,136 +151,18 @@ open class GeomHelper(
             }
         }
 
-        private fun takeGeometry(lineString: List<DoubleVector>, p: DataPointAesthetics): List<DoubleVector> {
-            return if (myGeometryWithPadding) padLineString(lineString, p, padArrow = false) else lineString
-        }
-
-        private fun renderSvgElement(
-            p: DataPointAesthetics,
-            lineString: List<DoubleVector>,
-            strokeScaler: (DataPointAesthetics) -> Double,
-            filled: Boolean
-        ): SvgNode? {
-            if (myNoSvg) return SvgGElement()
-
-            if (lineString.isEmpty() || lineString.size == 1) return null
-
-            val lineStringAfterPadding = padLineString(lineString, p, padArrow = true)
-
-            val lineElement = if (lineStringAfterPadding.size == 2) {
-                // Simple SvgLineElement is enough for a straight line without arrow
-                SvgLineElement().apply {
-                    x1().set(lineStringAfterPadding.first().x)
-                    y1().set(lineStringAfterPadding.first().y)
-                    x2().set(lineStringAfterPadding.last().x)
-                    y2().set(lineStringAfterPadding.last().y)
-                }
-            } else {
-                SvgPathElement().apply {
-                    d().set(
-                        if (myInterpolation != null) {
-                            SvgPathDataBuilder()
-                                .moveTo(lineStringAfterPadding.first())
-                                .interpolatePoints(lineStringAfterPadding, myInterpolation!!)
-                                .build()
-                        } else {
-                            SvgPathDataBuilder().lineString(lineStringAfterPadding).build()
-                        }
-                    )
-                }
+        companion object {
+            // Endpoints of a spoke of length `radius` at `angle`, anchored at `base`; `pivot` in [0, 1]
+            // slides the anchor from the spoke's tail (0) to its tip (1). Data-space; no coordinate transform.
+            fun spokeEndpoints(
+                base: DoubleVector,
+                angle: Double,
+                radius: Double,
+                pivot: Double
+            ): Pair<DoubleVector, DoubleVector> {
+                val spoke = DoubleVector(radius * cos(angle), radius * sin(angle))
+                return base.subtract(spoke.mul(pivot)) to base.add(spoke.mul(1 - pivot))
             }
-            decorate(lineElement, p, myStrokeAlphaEnabled, strokeScaler, filled)
-
-            val arrowElements = myArrowSpec?.let { arrowSpec ->
-                val (startHead, endHead) = ArrowSupport.createArrowHeads(
-                    lineString = lineStringAfterPadding,
-                    angle = arrowSpec.angle,
-                    arrowLength = arrowSpec.length,
-                    onStart = arrowSpec.isOnFirstEnd,
-                    onEnd = arrowSpec.isOnLastEnd,
-                    closed = arrowSpec.type == CLOSED,
-                    minTailLength = ArrowSupport.MIN_TAIL_LENGTH,
-                    minHeadLength = ArrowSupport.MIN_HEAD_LENGTH
-                )
-                val startHeadSvg = renderArrowHead(startHead, p, strokeScaler)
-                val endHeadSvg = renderArrowHead(endHead, p, strokeScaler)
-                listOfNotNull(startHeadSvg, endHeadSvg)
-            } ?: emptyList()
-
-            val debugPoints = if (myDebugRendering) {
-                lineStringAfterPadding.map {
-                    SvgCircleElement(it.x, it.y, 1.0).apply {
-                        fillColor().set(Color.LIGHT_GREEN)
-                        strokeColor().set(Color.GREEN)
-                    }
-                }
-            } else {
-                emptyList()
-            }
-
-            return if (arrowElements.isEmpty() && debugPoints.isEmpty()) {
-                lineElement
-            } else {
-                SvgGElement().apply {
-                    children().add(lineElement)
-                    children().addAll(arrowElements)
-                    children().addAll(debugPoints)
-                }
-            }
-        }
-
-        private fun renderArrowHead(
-            points: List<DoubleVector>,
-            p: DataPointAesthetics,
-            strokeScaler: (DataPointAesthetics) -> Double
-        ): SvgNode? {
-            if (points.size < 2) return null
-            val arrowSpec = myArrowSpec ?: return null
-
-            val arrowSvg = SvgPathElement().apply {
-                strokeMiterLimit().set(ArrowSupport.miterLength(arrowSpec.angle, AesScaling.strokeWidth(p)) * 2)
-                d().set(SvgPathDataBuilder()
-                    .lineString(points)
-                    .also { if (arrowSpec.type == CLOSED) it.closePath() }
-                    .build()
-                )
-            }
-
-            decorate(
-                arrowSvg,
-                arrowSpec.toArrowAes(p),
-                myStrokeAlphaEnabled,
-                strokeScaler,
-                filled = arrowSpec.type == CLOSED
-            )
-
-            return arrowSvg
-        }
-
-        private fun padLineString(lineString: List<DoubleVector>, p: DataPointAesthetics, padArrow: Boolean): List<DoubleVector> {
-            val startPadding = mySpacer + AesScaling.targetStartSize(p) + if (padArrow) arrowPadding(p, atStart = true) else 0.0
-            val endPadding = mySpacer + AesScaling.targetEndSize(p) + if (padArrow) arrowPadding(p, atStart = false) else 0.0
-
-            return padLineString(lineString, startPadding, endPadding)
-        }
-
-        private fun arrowPadding(
-            aes: DataPointAesthetics,
-            atStart: Boolean
-        ): Double {
-            val arrowSpec = myArrowSpec ?: return 0.0
-            val newVer = ArrowSupport.arrowPadding(
-                angle = arrowSpec.angle,
-                onStart = arrowSpec.isOnFirstEnd,
-                onEnd = arrowSpec.isOnLastEnd,
-                atStart = atStart,
-                strokeSize = AesScaling.strokeWidth(aes)
-            )
-
-            val hasArrow = if (atStart) arrowSpec.isOnFirstEnd else arrowSpec.isOnLastEnd
-            if (!hasArrow) return 0.0
-
-            return newVer
         }
     }
 
@@ -364,59 +176,57 @@ open class GeomHelper(
             else -> error("Unsupported axis aes: $axisAes")
         }
         return when (unit) {
-            RESOLUTION -> ctx.getResolution(axisAes) // resolution along the axis, i.e. the minimum distance between data points
+            RESOLUTION -> ctx.getResolution(axisAes) // i.e. the minimum distance between data points
             IDENTITY -> 1.0 // distance from 0 to 1 on the axis
             SIZE -> {
                 // diameter of a point of size 1 (in standard point size units)
                 AesScaling.POINT_UNIT_SIZE / unitSize
             }
             PIXEL -> {
-                // pixel
                 1.0 / unitSize
             }
         }
     }
 
+    // The single resample step for area-like geoms drawn as polygons: resample the data-space
+    // outline to a client-space polyline that follows the coordinate curve. Owned here so rect/hex
+    // don't each re-encode it. Callers pair it with simplifySubPixelJitter (below) to Douglas-Peucker
+    // away the sub-pixel jitter resampling can leave.
+    protected fun resampleToClient(points: List<DoubleVector>, p: DataPointAesthetics): List<DoubleVector> =
+        resample(precision = AdaptiveResampler.PIXEL_PRECISION, points = points) { toClient(it, p) }
+
+    // Unconditional Douglas-Peucker pass: removes the sub-pixel jitter
+    // resampling can leave on any polygon.
+    protected fun simplifySubPixelJitter(points: List<DoubleVector>): List<DoubleVector> =
+        PolylineSimplifier.douglasPeucker(points)
+            .setWeightLimit(PolylineSimplifier.DOUGLAS_PEUCKER_PIXEL_THRESHOLD).points
+            .firstOrNull() ?: emptyList()
+
     companion object {
         fun decorate(
             shape: SvgShape,
             p: DataPointAesthetics,
-            applyAlphaToAll: Boolean = ALPHA_CONTROLS_BOTH,
+            applyAlphaToAll: Boolean = DEFAULT_APPLY_ALPHA_TO_ALL,
             strokeScaler: (DataPointAesthetics) -> Double = AesScaling::strokeWidth,
             filled: Boolean = true
         ) {
-            AestheticsUtil.updateStroke(shape, p, applyAlphaToAll)
-            if (filled) {
-                AestheticsUtil.updateFill(shape, p)
-            } else {
-                shape.fill().set(SvgColors.NONE)
-            }
-            val strokeWidth = strokeScaler(p)
-            shape.strokeWidth().set(strokeWidth)
-            StrokeDashArraySupport.apply(shape, strokeWidth, p.lineType())
+            // One aes-to-paint owner (AesStyling) drives the Renderer path, this legacy path, and the slim path.
+            shape.applyStyles(
+                stroke = strokeFor(p, applyAlpha = applyAlphaToAll, strokeScaler = strokeScaler),
+                fill = if (filled) fillFor(p) else null
+            )
         }
 
         internal fun decorateSlimShape(
             shape: SvgSlimShape,
             p: DataPointAesthetics,
-            applyAlphaToAll: Boolean = ALPHA_CONTROLS_BOTH
+            applyAlphaToAll: Boolean = DEFAULT_APPLY_ALPHA_TO_ALL
         ) {
-            val stroke = p.color()!!
-            val strokeAlpha = if (applyAlphaToAll) {
-                // apply alpha aes
-                AestheticsUtil.alpha(stroke, p)
-            } else {
-                // keep color's alpha
-                SvgUtils.alpha2opacity(stroke.alpha)
-            }
-
-            val fill = p.fill()!!
-            val fillAlpha = AestheticsUtil.alpha(fill, p)
-
-            shape.setFill(fill, fillAlpha)
-            shape.setStroke(stroke, strokeAlpha)
-            shape.setStrokeWidth(AesScaling.strokeWidth(p))
-            StrokeDashArraySupport.apply(shape, AesScaling.strokeWidth(p), p.lineType())
+            // Route through AesStyling too, so the slim path can't drift from decorate / the Renderer.
+            shape.applyStyles(
+                stroke = strokeFor(p, applyAlpha = applyAlphaToAll),
+                fill = fillFor(p)
+            )
         }
     }
 }

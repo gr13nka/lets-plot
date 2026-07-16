@@ -83,8 +83,7 @@ class PlotAssembler constructor(
                     geomTiles,
                     geomTiles.mappersNP,
                     guideOptionsMap,
-                    legendTheme,
-                    theme.panel()
+                    theme
                 )
             }
         }

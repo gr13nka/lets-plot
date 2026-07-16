@@ -19,6 +19,8 @@ __all__ = [
 def theme(*,
           exponent_format=None,
 
+          renderer=None,
+
           line=None,
           rect=None,
           text=None,
@@ -121,6 +123,12 @@ def theme(*,
         See `Formatting <https://lets-plot.org/python/pages/formats.html>`__.
 
         Superscript is not supported when exporting to PNG/PDF.
+    renderer : str, default='crisp'
+        Rendering style: 'crisp' (plain) or 'xkcd' (hand-drawn comic style).
+        For the authentic xkcd handwriting, install the 'xkcd Script' font from
+        https://github.com/ipython/xkcd-font (not bundled: it ships under a
+        NonCommercial license). Without it, the 'xkcd' style falls back to Comic Sans MS.
+        On systems using fontconfig (Linux, PNG/PDF export), run ``fc-cache -f`` after installing.
     line : str or dict
         Style settings for all line elements.
         Set 'blank' or result of `element_blank() <https://lets-plot.org/python/pages/api/lets_plot.element_blank.html>`__ to draw nothing and assign no space.

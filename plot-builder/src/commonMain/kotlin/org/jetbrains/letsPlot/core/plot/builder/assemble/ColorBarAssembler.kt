@@ -12,9 +12,12 @@ import org.jetbrains.letsPlot.core.FeatureSwitch
 import org.jetbrains.letsPlot.core.plot.base.Scale
 import org.jetbrains.letsPlot.core.plot.base.ScaleMapper
 import org.jetbrains.letsPlot.core.plot.base.guide.LegendDirection
+import org.jetbrains.letsPlot.core.plot.base.render.primitive.Renderer
+import org.jetbrains.letsPlot.core.plot.base.render.primitive.CrispRenderer
 import org.jetbrains.letsPlot.core.plot.base.scale.ScaleBreaks
 import org.jetbrains.letsPlot.core.plot.base.scale.breaks.ScaleBreaksUtil
 import org.jetbrains.letsPlot.core.plot.base.theme.LegendTheme
+import org.jetbrains.letsPlot.core.plot.base.theme.Theme
 import org.jetbrains.letsPlot.core.plot.builder.guide.ColorBarComponent
 import org.jetbrains.letsPlot.core.plot.builder.guide.ColorBarComponentLayout
 import org.jetbrains.letsPlot.core.plot.builder.guide.ColorBarComponentSpec
@@ -30,8 +33,8 @@ class ColorBarAssembler constructor(
     private val transformedDomain: DoubleSpan,
     private val scale: Scale,
     private val scaleMapper: ScaleMapper<Color>,
-    private val theme: LegendTheme,
-    private var colorBarOptions: ColorBarOptions?
+    private val theme: Theme,
+    private var colorBarOptions: ColorBarOptions?,
 ) {
     fun createColorBar(): LegendBoxInfo? {
         var scale = scale
@@ -44,19 +47,21 @@ class ColorBarAssembler constructor(
             return null
         }
 
+        val legendTheme = theme.legend()
         val spec = createColorBarSpec(
             legendTitle,
             transformedDomain,
             scaleBreaks,
             scaleMapper,
-            theme,
-            colorBarOptions
+            legendTheme,
+            colorBarOptions,
+            theme.renderer
         )
 
         return object : LegendBoxInfo(
             size = spec.size,
-            position = theme.position(),
-            justification = theme.justification(),
+            position = legendTheme.position(),
+            justification = legendTheme.justification(),
             spec = spec
         ) {
             override fun createSvgComponent(): LegendBox {
@@ -95,7 +100,8 @@ class ColorBarAssembler constructor(
             breaks: ScaleBreaks,
             scaleMapper: ScaleMapper<Color>,
             theme: LegendTheme,
-            options: ColorBarOptions? = null
+            options: ColorBarOptions? = null,
+            renderer: Renderer = CrispRenderer,
         ): ColorBarComponentSpec {
 
             val legendDirection = LegendAssemblerUtil.legendDirection(theme)
@@ -144,7 +150,8 @@ class ColorBarAssembler constructor(
                 binCount = options?.binCount ?: DEF_NUM_BIN,
                 theme,
                 layout,
-                reverse
+                reverse,
+                renderer
             )
         }
     }

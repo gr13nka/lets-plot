@@ -115,6 +115,7 @@ internal class PolarFrameOfReference(
                 geomContentBounds = layoutInfo.geomContentBounds,
                 gridTheme = gridTheme,
                 panelTheme = theme.panel(),
+                renderer = theme.renderer,
             )
             val gridOrigin = layoutInfo.geomContentBounds.origin
             gridComponent.moveTo(gridOrigin)
@@ -134,6 +135,7 @@ internal class PolarFrameOfReference(
                 geomContentBounds = layoutInfo.geomContentBounds,
                 gridTheme = gridTheme,
                 panelTheme = theme.panel(),
+                renderer = theme.renderer,
             )
             val gridOrigin = layoutInfo.geomContentBounds.origin
             gridComponent.moveTo(gridOrigin)

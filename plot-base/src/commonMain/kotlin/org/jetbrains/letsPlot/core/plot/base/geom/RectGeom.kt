@@ -8,7 +8,7 @@ package org.jetbrains.letsPlot.core.plot.base.geom
 import org.jetbrains.letsPlot.commons.geometry.DoubleRectangle
 import org.jetbrains.letsPlot.core.plot.base.*
 import org.jetbrains.letsPlot.core.plot.base.geom.util.RectangleTooltipHelper
-import org.jetbrains.letsPlot.core.plot.base.geom.util.RectanglesHelper
+import org.jetbrains.letsPlot.core.plot.base.geom.util.SvgRectHelper
 import org.jetbrains.letsPlot.core.plot.base.render.SvgRoot
 import org.jetbrains.letsPlot.core.plot.base.tooltip.TipLayoutHint
 
@@ -21,19 +21,9 @@ class RectGeom : GeomBase() {
         coord: CoordinateSystem,
         ctx: GeomContext
     ) {
-        val helper = RectanglesHelper(aesthetics, pos, coord, ctx, ::clientRectByDataPoint)
         val tooltipHelper = RectangleTooltipHelper(pos, coord, ctx, tooltipKind = TipLayoutHint.Kind.CURSOR_TOOLTIP)
-        if (coord.isLinear) {
-            helper.createRectangles() { aes, svgNode, rect ->
-                root.add(svgNode)
-                tooltipHelper.addTarget(aes, rect)
-            }
-        } else {
-            helper.createNonLinearRectangles() { aes, svgNode, polygon ->
-                root.add(svgNode)
-                tooltipHelper.addTarget(aes, polygon)
-            }
-        }
+        SvgRectHelper.dataRect(aesthetics, pos, coord, ctx, ::rectByDataPoint)
+            .drawTo(root, tooltipHelper)
     }
 
     companion object {
@@ -41,7 +31,7 @@ class RectGeom : GeomBase() {
         //rectangle groups are used in geom_livemap
         const val HANDLES_GROUPS = true
 
-        private fun clientRectByDataPoint(p: DataPointAesthetics): DoubleRectangle? {
+        private fun rectByDataPoint(p: DataPointAesthetics): DoubleRectangle? {
             val xmin = p.finiteOrNull(Aes.XMIN) ?: return null
             val xmax = p.finiteOrNull(Aes.XMAX) ?: return null
             val ymin = p.finiteOrNull(Aes.YMIN) ?: return null

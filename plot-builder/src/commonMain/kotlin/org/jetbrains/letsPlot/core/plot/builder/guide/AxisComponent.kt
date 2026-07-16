@@ -9,6 +9,9 @@ import org.jetbrains.letsPlot.commons.geometry.DoubleRectangle
 import org.jetbrains.letsPlot.commons.geometry.DoubleVector
 import org.jetbrains.letsPlot.commons.values.Color
 import org.jetbrains.letsPlot.core.plot.base.render.linetype.LineType
+import org.jetbrains.letsPlot.core.plot.base.render.primitive.Renderer
+import org.jetbrains.letsPlot.core.plot.base.render.primitive.StrokeStyle
+import org.jetbrains.letsPlot.core.plot.base.render.primitive.CrispRenderer
 import org.jetbrains.letsPlot.core.plot.base.render.svg.Label
 import org.jetbrains.letsPlot.core.plot.base.render.svg.StrokeDashArraySupport
 import org.jetbrains.letsPlot.core.plot.base.render.svg.SvgComponent
@@ -31,6 +34,10 @@ class AxisComponent(
     private val axisTheme: AxisTheme,
     private val hideAxis: Boolean = false,
     private val hideAxisBreaks: Boolean = false,
+    private val renderer: Renderer = CrispRenderer,
+    // Splits the axis line per tick gap (see buildAxis) so a wobbling renderer stays anchored at every
+    // tick base; from the SPLIT_AXIS_LINE_AT_TICKS chrome adaptation (Theme.chromeAdaptations).
+    private val splitLineAtTicks: Boolean = false,
 ) : SvgComponent() {
 
     override fun buildComponent() {
@@ -100,21 +107,31 @@ class AxisComponent(
             addTicks(minorTicks, tickLabelBaseOffset)
         }
 
-        // Axis line
+        // Axis line. When splitLineAtTicks it is split into one segment per gap between tick marks, so the
+        // wobble pins each path's endpoints and the line stays anchored at every tick base.
         if (axisTheme.showLine()) {
-            val x1: Double = if (orientation.isHorizontal) start else 0.0
-            val x2: Double = if (orientation.isHorizontal) end else 0.0
-            val y1: Double = if (!orientation.isHorizontal) start else 0.0
-            val y2: Double = if (!orientation.isHorizontal) end else 0.0
-
-            val axisLine = SvgLineElement(x1, y1, x2, y2).apply {
-                strokeWidth().set(axisTheme.lineWidth())
-                strokeColor().set(axisTheme.lineColor())
-                StrokeDashArraySupport.apply(this, axisTheme.lineWidth(), axisTheme.lineType())
+            val tickMarkLocs = if (splitLineAtTicks) {
+                buildList {
+                    if (axisTheme.showTickMarks()) addAll(breaksData.majorBreaks.map(::tickLoc))
+                    if (axisTheme.showMinorTickMarks()) addAll(breaksData.minorBreaks.map(::tickLoc))
+                }.filter { it in start..end }.sorted()
+            } else {
+                emptyList()
             }
-            rootElement.children().add(axisLine)
+
+            val stroke = StrokeStyle(axisTheme.lineColor(), width = axisTheme.lineWidth(), lineType = axisTheme.lineType())
+            // Constant seed: interior segments (tick→tick) keep their length and translate rigidly under
+            // pan, so the wobble stays put instead of re-randomizing (no stable per-tick id available here).
+            (listOf(start) + tickMarkLocs + end).distinct().zipWithNext { a, b ->
+                rootElement.children().add(renderer.line(axisPoint(a), axisPoint(b), stroke, seed = 0))
+            }
         }
     }
+
+    private fun tickLoc(break_: DoubleVector): Double = if (orientation.isHorizontal) break_.x else break_.y
+
+    private fun axisPoint(loc: Double): DoubleVector =
+        if (orientation.isHorizontal) DoubleVector(loc, 0.0) else DoubleVector(0.0, loc)
 
     private fun addTicks(ticks: TickData, tickLabelBaseOffset: DoubleVector) {
         for (i in ticks.breaks.indices) {

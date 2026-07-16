@@ -16,9 +16,11 @@ import org.jetbrains.letsPlot.core.plot.base.ScaleMapper
 import org.jetbrains.letsPlot.core.plot.base.aes.AestheticsDefaults
 import org.jetbrains.letsPlot.core.plot.base.guide.LegendDirection
 import org.jetbrains.letsPlot.core.plot.base.render.LegendKeyElementFactory
+import org.jetbrains.letsPlot.core.plot.base.render.primitive.Renderer
+import org.jetbrains.letsPlot.core.plot.base.render.primitive.CrispRenderer
 import org.jetbrains.letsPlot.core.plot.base.scale.breaks.ScaleBreaksUtil
 import org.jetbrains.letsPlot.core.plot.base.theme.LegendTheme
-import org.jetbrains.letsPlot.core.plot.base.theme.PanelTheme
+import org.jetbrains.letsPlot.core.plot.base.theme.Theme
 import org.jetbrains.letsPlot.core.plot.builder.assemble.LegendAssemblerUtil.mapToAesthetics
 import org.jetbrains.letsPlot.core.plot.builder.guide.*
 import org.jetbrains.letsPlot.core.plot.builder.layout.LegendBoxInfo
@@ -30,8 +32,7 @@ class LegendAssembler(
     private val legendTitle: String,
     private val guideOptionsMap: Map<GuideKey, GuideOptionsList>,
     private val scaleMappers: Map<Aes<*>, ScaleMapper<*>>,
-    private val legendTheme: LegendTheme,
-    private val panelTheme: PanelTheme
+    private val theme: Theme,
 ) {
 
     private val legendLayers = ArrayList<LegendLayer>()
@@ -116,7 +117,8 @@ class LegendAssembler(
             .mapNotNull(GuideOptionsList::getLegendOptions)
         val combinedLegendOptions = LegendOptions.combine(legendOptionsList)
 
-        val spec = createLegendSpec(legendTitle, legendBreaks, legendTheme, combinedLegendOptions)
+        val legendTheme = theme.legend()
+        val spec = createLegendSpec(legendTitle, legendBreaks, legendTheme, combinedLegendOptions, theme.renderer)
 
         return object : LegendBoxInfo(
             size = spec.size,
@@ -125,7 +127,7 @@ class LegendAssembler(
             spec = spec
         ) {
             override fun createSvgComponent(): LegendBox {
-                val c = LegendComponent(this.spec as LegendComponentSpec, panelTheme)
+                val c = LegendComponent(this.spec as LegendComponentSpec, theme.panel())
                 c.debug = DEBUG_DRAWING
                 return c
             }
@@ -246,7 +248,8 @@ class LegendAssembler(
             title: String,
             breaks: List<LegendBreak>,
             theme: LegendTheme,
-            options: LegendOptions = LegendOptions()
+            options: LegendOptions = LegendOptions(),
+            renderer: Renderer = CrispRenderer,
         ): LegendComponentSpec {
 
             val legendDirection = LegendAssemblerUtil.legendDirection(theme)
@@ -344,7 +347,8 @@ class LegendAssembler(
                 breaks,
                 theme,
                 layout,
-                reverse = false
+                reverse = false,
+                renderer = renderer
             )
         }
     }

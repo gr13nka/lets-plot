@@ -118,6 +118,23 @@ class ThemeConfigMergeTest {
     }
 
     @Test
+    fun `subplot with its own theme options still inherits the container renderer`() {
+        // The renderer style is container-wide look policy: RENDERER is in the inherited-key set, so
+        // a subplot that carries any of its own theme options keeps the parent's renderer.
+        val container = buildTheme(
+            Name.R_GREY,
+            userOptions = mapOf(ThemeOption.RENDERER to ThemeOption.Renderer.XKCD)
+        )
+
+        val subplot = buildThemeViaConfig(
+            Name.R_CLASSIC,   // own theme option -> exercises the filterKeys inheritance branch
+            container = container
+        ) as DefaultTheme
+
+        assertEquals(ThemeOption.Renderer.XKCD, subplot.options[ThemeOption.RENDERER])
+    }
+
+    @Test
     fun `explicit subplot theme overrides container theme`() {
         val container = buildTheme(Name.R_GREY)
         val subplot = buildThemeViaConfig(Name.R_LIGHT,

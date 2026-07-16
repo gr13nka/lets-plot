@@ -31,15 +31,10 @@ class SmoothGeom : GeomBase() {
         val dataPoints = ordered_X(with_X_Y(aesthetics.dataPoints()))
         val helper = LinesHelper(pos, coord, ctx)
 
-        helper.setAlphaEnabled(false)
-
-        // Confidence interval
-        val bands = helper.createBands(dataPoints, GeomUtil.TO_LOCATION_X_YMAX, GeomUtil.TO_LOCATION_X_YMIN)
-        root.appendNodes(bands)
-
-        // Regression line
-        val regressionLines = helper.createLines(dataPoints, GeomUtil.TO_LOCATION_X_Y)
-        root.appendNodes(regressionLines)
+        // Confidence interval band, with the regression line drawn over it.
+        val bands = helper.createBandData(dataPoints, GeomUtil.TO_LOCATION_X_YMAX, GeomUtil.TO_LOCATION_X_YMIN)
+        val regressionLines = helper.createPathData(dataPoints, GeomUtil.TO_LOCATION_X_Y)
+        drawBands(root, ctx.renderer, bands, regressionLines)
 
         buildHints(dataPoints, pos, coord, ctx)
     }
@@ -53,7 +48,7 @@ class SmoothGeom : GeomBase() {
         val helper = GeomHelper(pos, coord, ctx)
 
         val linesHelper = LinesHelper(pos, coord, ctx)
-        val paths = linesHelper.createPaths(dataPoints, GeomUtil.TO_LOCATION_X_Y)
+        val paths = linesHelper.createStraightPathData(dataPoints, GeomUtil.TO_LOCATION_X_Y)
 
         val objectRadius = 0.0
         val colorsByDataPoint = HintColorUtil.createColorMarkerMapper(GeomKind.SMOOTH, ctx)

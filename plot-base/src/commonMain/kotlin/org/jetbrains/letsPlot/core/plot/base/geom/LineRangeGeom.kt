@@ -10,14 +10,14 @@ import org.jetbrains.letsPlot.commons.geometry.DoubleVector
 import org.jetbrains.letsPlot.core.plot.base.*
 import org.jetbrains.letsPlot.core.plot.base.aes.AesScaling
 import org.jetbrains.letsPlot.core.plot.base.geom.util.GeomHelper
-import org.jetbrains.letsPlot.core.plot.base.geom.util.GeomHelper.Companion.decorate
 import org.jetbrains.letsPlot.core.plot.base.geom.util.GeomUtil
 import org.jetbrains.letsPlot.core.plot.base.geom.util.GeomUtil.toLocation
 import org.jetbrains.letsPlot.core.plot.base.geom.util.HintColorUtil
 import org.jetbrains.letsPlot.core.plot.base.geom.util.RectangleTooltipHelper
+import org.jetbrains.letsPlot.core.plot.base.geom.util.lineNode
+import org.jetbrains.letsPlot.core.plot.base.geom.util.strokeFor
 import org.jetbrains.letsPlot.core.plot.base.render.LegendKeyElementFactory
 import org.jetbrains.letsPlot.core.plot.base.render.SvgRoot
-import org.jetbrains.letsPlot.datamodel.svg.dom.SvgRectElement
 import kotlin.math.max
 
 class LineRangeGeom : GeomBase() {
@@ -33,8 +33,7 @@ class LineRangeGeom : GeomBase() {
         ctx: GeomContext
     ) {
         val geomHelper = GeomHelper(pos, coord, ctx)
-        val helper = geomHelper.createSvgElementHelper()
-        helper.setStrokeAlphaEnabled(true)
+        val helper = geomHelper.createLineGeometryHelper()
         val colorsByDataPoint = HintColorUtil.createColorMarkerMapper(GeomKind.LINE_RANGE, ctx)
         val tooltipHelper = RectangleTooltipHelper(
             pos = pos,
@@ -48,21 +47,12 @@ class LineRangeGeom : GeomBase() {
             val start = p.toLocation(Aes.X, Aes.YMIN) ?: continue
             val end = p.toLocation(Aes.X, Aes.YMAX) ?: continue
 
-            helper.createLine(start, end, p)?.let { (svgElement, _) -> root.add(svgElement) }
+            val geometry = helper.createPaddedLineGeometry(start, end, p) ?: continue
+            root.add(lineNode(ctx.renderer, geometry, strokeFor(p), seed = p.index()))
         }
-        // tooltip
-        /*
-          Unlike the cases of CrossBarGeom and ErrorBarGeom, it is inconvenient to use RectanglesHelper here.
-          RectanglesHelper uses a geometry factory that returns rectangles in data coordinates, but clientRectByDataPoint() returns client coordinates.
-          Otherwise it is difficult to correctly calculate the width of the rectangle bounding the geometry, especially when the geometry is rotated.
-        */
-        aesthetics.dataPoints().forEach { p ->
-            clientRectByDataPoint(geomHelper)(p)?.let { clientRect ->
-                val svgRect = SvgRectElement(clientRect)
-                decorate(svgRect, p)
-                tooltipHelper.addTarget(p, clientRect)
-            }
-        }
+        // tooltip - the factory returns client coordinates (a pixel-width rect that accounts for
+        // rotation), so the helper draws nothing and only reports the rect for hit-testing.
+        tooltipHelper.registerClientRectTargets(aesthetics, clientRectByDataPoint(geomHelper))
     }
 
     private fun clientRectByDataPoint(

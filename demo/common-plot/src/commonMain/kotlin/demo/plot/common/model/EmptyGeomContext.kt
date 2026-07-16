@@ -11,6 +11,8 @@ import org.jetbrains.letsPlot.commons.values.Color
 import org.jetbrains.letsPlot.commons.values.Font
 import org.jetbrains.letsPlot.core.plot.base.*
 import org.jetbrains.letsPlot.core.plot.base.geom.annotation.Annotation
+import org.jetbrains.letsPlot.core.plot.base.render.primitive.Renderer
+import org.jetbrains.letsPlot.core.plot.base.render.primitive.CrispRenderer
 import org.jetbrains.letsPlot.core.plot.base.theme.DefaultFontFamilyRegistry
 import org.jetbrains.letsPlot.core.plot.base.tooltip.GeomTargetCollector
 import org.jetbrains.letsPlot.core.plot.base.tooltip.NullGeomTargetCollector
@@ -25,6 +27,7 @@ class EmptyGeomContext : GeomContext {
     override val annotation: Annotation? = null
     override val backgroundColor: Color = Color.WHITE
     override val plotContext: PlotContext = NullPlotContext
+    override val renderer: Renderer = CrispRenderer
 
     override fun getResolution(aes: Aes<Double>): Double {
         throw IllegalStateException("Not available in an empty geom context")

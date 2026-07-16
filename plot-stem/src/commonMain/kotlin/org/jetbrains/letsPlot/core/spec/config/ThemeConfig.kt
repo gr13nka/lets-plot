@@ -238,6 +238,7 @@ class ThemeConfig constructor(
                                 ThemeOption.LEGEND_JUSTIFICATION,
                                 ThemeOption.LEGEND_DIRECTION,
                                 ThemeOption.LEGEND_BOX_JUST,
+                                ThemeOption.RENDERER,              // the renderer style is container-wide look policy.
                             )
                         }
                     }

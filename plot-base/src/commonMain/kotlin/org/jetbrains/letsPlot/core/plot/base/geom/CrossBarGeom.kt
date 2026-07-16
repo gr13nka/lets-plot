@@ -16,7 +16,7 @@ import org.jetbrains.letsPlot.core.plot.base.geom.util.BoxHelper
 import org.jetbrains.letsPlot.core.plot.base.geom.util.GeomHelper
 import org.jetbrains.letsPlot.core.plot.base.geom.util.HintColorUtil
 import org.jetbrains.letsPlot.core.plot.base.geom.util.RectangleTooltipHelper
-import org.jetbrains.letsPlot.core.plot.base.geom.util.RectanglesHelper
+import org.jetbrains.letsPlot.core.plot.base.geom.util.SvgRectHelper
 import org.jetbrains.letsPlot.core.plot.base.render.LegendKeyElementFactory
 import org.jetbrains.letsPlot.core.plot.base.render.SvgRoot
 import org.jetbrains.letsPlot.core.plot.base.tooltip.TipLayoutHint
@@ -37,7 +37,6 @@ class CrossBarGeom : GeomBase(), WithWidth {
         ctx: GeomContext
     ) {
         val geomHelper = GeomHelper(pos, coord, ctx)
-        val helper = RectanglesHelper(aesthetics, pos, coord, ctx, rectByDataPoint(geomHelper))
         val tooltipHelper = RectangleTooltipHelper(
             pos = pos,
             coord = coord,
@@ -47,16 +46,11 @@ class CrossBarGeom : GeomBase(), WithWidth {
             fillColorMapper = { HintColorUtil.colorWithAlpha(it) }
         )
 
-        val rectangles = HashMap<DataPointAesthetics, DoubleRectangle>()
+        SvgRectHelper.dataRect(aesthetics, pos, coord, ctx, rectByDataPoint(geomHelper))
+            .drawTo(root, tooltipHelper)
+
         val midLines = HashMap<Int, DoubleSegment>()
-
-        helper.createRectangles { aes, svgNode, rect ->
-            root.add(svgNode)
-            tooltipHelper.addTarget(aes, rect)
-            rectangles[aes] = rect
-        }
-
-        BoxHelper.buildMidlines(
+        BoxHelper.buildCurvedMidlines(
             aesthetics,
             fatten = fattenMidline,
             geomHelper,
@@ -67,6 +61,13 @@ class CrossBarGeom : GeomBase(), WithWidth {
         }
 
         ctx.annotation?.let {
+            // Annotations need the client-space rectangles; the rect drawing above doesn't expose them,
+            // so compute them here (only when annotations are enabled).
+            val rectFactory = rectByDataPoint(geomHelper)
+            val rectangles = HashMap<DataPointAesthetics, DoubleRectangle>()
+            aesthetics.dataPoints().forEach { p ->
+                rectFactory(p)?.let { geomHelper.toClient(it, p) }?.let { rectangles[p] = it }
+            }
             CrossBarAnnotation.build(
                 root,
                 rectangles,
@@ -92,9 +93,7 @@ class CrossBarGeom : GeomBase(), WithWidth {
             val x = p.finiteOrNull(Aes.X) ?: return null
             val ymin = p.finiteOrNull(Aes.YMIN) ?: return null
             val ymax = p.finiteOrNull(Aes.YMAX) ?: return null
-            val w = p.finiteOrNull(Aes.WIDTH) ?: return null
-
-            val width = w * geomHelper.getUnitResolution(widthUnit, Aes.X)
+            val width = BoxHelper.boxWidth(p, widthUnit, geomHelper) ?: return null
             val origin = DoubleVector(x - width / 2, ymin)
             val dimension = DoubleVector(width, ymax - ymin)
             return DoubleRectangle(origin, dimension)
@@ -107,9 +106,7 @@ class CrossBarGeom : GeomBase(), WithWidth {
         fun factory(p: DataPointAesthetics): DoubleSegment? {
             val x = p.finiteOrNull(Aes.X) ?: return null
             val y = p.finiteOrNull(Aes.Y) ?: return null
-            val w = p.finiteOrNull(Aes.WIDTH) ?: return null
-
-            val width = w * geomHelper.getUnitResolution(widthUnit, Aes.X)
+            val width = BoxHelper.boxWidth(p, widthUnit, geomHelper) ?: return null
 
             return DoubleSegment(
                 DoubleVector(x - width / 2, y),
@@ -119,15 +116,6 @@ class CrossBarGeom : GeomBase(), WithWidth {
 
         return ::factory
     }
-
-//    private fun clientRectByDataPoint(geomHelper: GeomHelper): (DataPointAesthetics) -> DoubleRectangle? {
-//        val factory = rectByDataPoint(geomHelper)
-//        return { p ->
-//            factory(p)?.let { rect ->
-//                geomHelper.toClient(rect, p)
-//            }
-//        }
-//    }
 
     companion object {
         const val HANDLES_GROUPS = false

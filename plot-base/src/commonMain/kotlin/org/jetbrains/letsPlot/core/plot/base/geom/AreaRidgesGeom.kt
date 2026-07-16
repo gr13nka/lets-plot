@@ -8,13 +8,15 @@ package org.jetbrains.letsPlot.core.plot.base.geom
 import org.jetbrains.letsPlot.commons.geometry.DoubleVector
 import org.jetbrains.letsPlot.commons.interval.DoubleSpan
 import org.jetbrains.letsPlot.core.plot.base.*
+import org.jetbrains.letsPlot.core.plot.base.geom.util.PolylineData
+import org.jetbrains.letsPlot.core.plot.base.geom.util.drawBands
 import org.jetbrains.letsPlot.core.plot.base.geom.util.GeomUtil
 import org.jetbrains.letsPlot.core.plot.base.geom.util.LinesHelper
 import org.jetbrains.letsPlot.core.plot.base.geom.util.QuantilesHelper
 import org.jetbrains.letsPlot.core.plot.base.geom.util.TargetCollectorHelper
+import org.jetbrains.letsPlot.core.plot.base.geom.util.outlineStrokeFor
 import org.jetbrains.letsPlot.core.plot.base.render.SvgRoot
 import org.jetbrains.letsPlot.core.plot.base.stat.DensityRidgesStat
-import org.jetbrains.letsPlot.datamodel.svg.dom.SvgNode
 
 class AreaRidgesGeom : GeomBase(), WithHeight {
     var scale: Double = DEF_SCALE
@@ -71,23 +73,18 @@ class AreaRidgesGeom : GeomBase(), WithHeight {
         val targetCollectorHelper = TargetCollectorHelper(GeomKind.AREA_RIDGES, ctx)
 
         quantilesHelper.splitByQuantiles(dataPoints, Aes.X).forEach { points ->
-            val paths = helper.createBands(
-                points,
-                boundTransform,
-                GeomUtil.TO_LOCATION_X_Y,
-                simplifyBorders = true
-            )
-            root.appendNodes(paths)
+            val bands = helper.createBandData(points, boundTransform, GeomUtil.TO_LOCATION_X_Y, simplifyBorders = true)
+            val lines = helper.createPathData(points, boundTransform)
+            drawBands(root, ctx.renderer, bands, lines)
 
-            helper.setAlphaEnabled(false)
-            root.appendNodes(helper.createLines(points, boundTransform))
-
-            val pathDataList = helper.createPaths(points, boundTransform)
+            val pathDataList = helper.createStraightPathData(points, boundTransform)
             targetCollectorHelper.addPaths(pathDataList)
         }
 
         if (quantileLines) {
-            createQuantileLines(dataPoints, quantilesHelper, ctx).forEach(root::add)
+            createQuantileLines(dataPoints, quantilesHelper, ctx).forEach { (p, geometry) ->
+                root.add(ctx.renderer.path(geometry, outlineStrokeFor(p), closed = false, seed = p.index()))
+            }
         }
     }
 
@@ -95,10 +92,10 @@ class AreaRidgesGeom : GeomBase(), WithHeight {
         dataPoints: Iterable<DataPointAesthetics>,
         quantilesHelper: QuantilesHelper,
         ctx: GeomContext
-    ): List<SvgNode> {
+    ): List<PolylineData> {
         val toLocationBoundStart = toLocationBound(ctx)
         val toLocationBoundEnd = { p: DataPointAesthetics -> DoubleVector(p.x()!!, p.y()!!) }
-        return quantilesHelper.getQuantileLineElements(dataPoints, Aes.X, toLocationBoundStart, toLocationBoundEnd)
+        return quantilesHelper.getQuantileLineSegments(dataPoints, Aes.X, toLocationBoundStart, toLocationBoundEnd)
     }
 
     private fun toLocationBound(ctx: GeomContext): (p: DataPointAesthetics) -> DoubleVector {

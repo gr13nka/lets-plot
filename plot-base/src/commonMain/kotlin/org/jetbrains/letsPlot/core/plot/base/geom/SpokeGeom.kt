@@ -10,9 +10,10 @@ import org.jetbrains.letsPlot.core.plot.base.*
 import org.jetbrains.letsPlot.core.plot.base.geom.legend.HLineLegendKeyElementFactory
 import org.jetbrains.letsPlot.core.plot.base.geom.util.ArrowSpec
 import org.jetbrains.letsPlot.core.plot.base.geom.util.GeomHelper
-import org.jetbrains.letsPlot.core.plot.base.geom.util.GeomHelper.SvgElementHelper
+import org.jetbrains.letsPlot.core.plot.base.geom.util.GeomHelper.LineGeometryHelper
 import org.jetbrains.letsPlot.core.plot.base.geom.util.GeomUtil.toLocation
 import org.jetbrains.letsPlot.core.plot.base.geom.util.TargetCollectorHelper
+import org.jetbrains.letsPlot.core.plot.base.geom.util.buildLineWithArrow
 import org.jetbrains.letsPlot.core.plot.base.render.LegendKeyElementFactory
 import org.jetbrains.letsPlot.core.plot.base.render.SvgRoot
 
@@ -32,18 +33,19 @@ class SpokeGeom : GeomBase(), WithWidth, WithHeight {
     ) {
         val tooltipHelper = TargetCollectorHelper(GeomKind.SPOKE, ctx)
         val geomHelper = GeomHelper(pos, coord, ctx)
-        val svgElementHelper = geomHelper.createSvgElementHelper()
-            .setStrokeAlphaEnabled(true)
-            .setArrowSpec(arrowSpec)
 
         for (p in aesthetics.dataPoints()) {
-            val start = p.toLocation(Aes.X, Aes.Y) ?: continue
+            val base = p.toLocation(Aes.X, Aes.Y) ?: continue
             val angle = p.finiteOrNull(Aes.ANGLE) ?: continue
             val radius = p.finiteOrNull(Aes.RADIUS) ?: continue
-            val (svg, geometry) = svgElementHelper.createSpoke(start, angle, radius, pivot.factor, p) ?: continue
 
+            val (start, end) = LineGeometryHelper.spokeEndpoints(base, angle, radius, pivot.factor)
+            val c1 = geomHelper.toClient(start, p) ?: continue
+            val c2 = geomHelper.toClient(end, p) ?: continue
+
+            val (nodes, geometry) = buildLineWithArrow(ctx.renderer, listOf(c1, c2), p, arrowSpec, spacer = 0.0)
+            nodes.forEach { root.add(it) }
             tooltipHelper.addLine(geometry, p)
-            root.add(svg)
         }
     }
 
@@ -73,8 +75,8 @@ class SpokeGeom : GeomBase(), WithWidth, WithHeight {
         val base = p.toLocation(Aes.X, Aes.Y)?.flipIf(coordAes != spanAxisAes) ?: return null
         val angle = p.finiteOrNull(Aes.ANGLE) ?: return null
         val radius = p.finiteOrNull(Aes.RADIUS) ?: return null
-        val elementHelper = SvgElementHelper()
-        val (_, geometry) = elementHelper.createSpoke(base, angle, radius, pivot.factor, p) ?: return null
+        val elementHelper = LineGeometryHelper()
+        val geometry = elementHelper.createSpokeGeometry(base, angle, radius, pivot.factor, p) ?: return null
 
         require(geometry.size == 2)
         val (start, end) = geometry

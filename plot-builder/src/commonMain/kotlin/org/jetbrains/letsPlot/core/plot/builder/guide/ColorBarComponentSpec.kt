@@ -9,6 +9,8 @@ import org.jetbrains.letsPlot.commons.geometry.DoubleVector
 import org.jetbrains.letsPlot.commons.interval.DoubleSpan
 import org.jetbrains.letsPlot.commons.values.Color
 import org.jetbrains.letsPlot.core.plot.base.ScaleMapper
+import org.jetbrains.letsPlot.core.plot.base.render.primitive.Renderer
+import org.jetbrains.letsPlot.core.plot.base.render.primitive.CrispRenderer
 import org.jetbrains.letsPlot.core.plot.base.scale.ScaleBreaks
 import org.jetbrains.letsPlot.core.plot.base.theme.LegendTheme
 
@@ -20,8 +22,9 @@ class ColorBarComponentSpec(
     val binCount: Int,
     theme: LegendTheme,
     override val layout: ColorBarComponentLayout,
-    reverse: Boolean
-) : LegendBoxSpec(title, theme, reverse) {
+    reverse: Boolean,
+    renderer: Renderer = CrispRenderer,
+) : LegendBoxSpec(title, theme, reverse, renderer) {
 
     override fun hasSameContent(other: LegendBoxSpec): Boolean {
         if (other !is ColorBarComponentSpec) return false

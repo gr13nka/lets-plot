@@ -14,14 +14,13 @@ import org.jetbrains.letsPlot.core.plot.base.aes.AesScaling
 import org.jetbrains.letsPlot.core.plot.base.geom.util.GeomHelper
 import org.jetbrains.letsPlot.core.plot.base.geom.util.GeomUtil
 import org.jetbrains.letsPlot.core.plot.base.geom.util.HintColorUtil.createColorMarkerMapper
-import org.jetbrains.letsPlot.core.plot.base.geom.util.LinesHelper
+import org.jetbrains.letsPlot.core.plot.base.geom.util.fillFor
+import org.jetbrains.letsPlot.core.plot.base.geom.util.outlineStrokeFor
 import org.jetbrains.letsPlot.core.plot.base.render.LegendKeyElementFactory
 import org.jetbrains.letsPlot.core.plot.base.render.SvgRoot
-import org.jetbrains.letsPlot.core.plot.base.render.svg.LinePath
 import org.jetbrains.letsPlot.core.plot.base.stat.DotplotStat.Method
 import org.jetbrains.letsPlot.core.plot.base.tooltip.GeomTargetCollector
 import org.jetbrains.letsPlot.core.plot.base.tooltip.TipLayoutHint
-import org.jetbrains.letsPlot.datamodel.svg.dom.SvgPathDataBuilder
 import kotlin.math.abs
 import kotlin.math.ceil
 import kotlin.math.min
@@ -61,7 +60,7 @@ open class DotplotGeom : GeomBase(), WithWidth {
         )
         if (!pointsWithBinWidth.any()) return
 
-//        val binWidthPx = pointsWithBinWidth.first().binwidth()!! * ctx.getUnitResolution(Aes.X)
+        // Bin width in client px via coord.toClient, so it stays correct under flipped / non-linear coords.
         val binWidthPx = pointsWithBinWidth.first().let {
             val x = it.x()!!
             val y = it.y()!!
@@ -89,7 +88,6 @@ open class DotplotGeom : GeomBase(), WithWidth {
         ctx: GeomContext,
         binWidthPx: Double
     ) {
-        val dotHelper = DotHelper(pos, coord, ctx)
         val geomHelper = GeomHelper(pos, coord, ctx)
         var builtStackSize = 0
         for (p in dataPoints) {
@@ -98,17 +96,22 @@ open class DotplotGeom : GeomBase(), WithWidth {
                 coord,
                 ctx,
                 binWidthPx,
-                ctx.flipped
+                // dots stack vertically by default; when flipped they stack horizontally (capacity from width)
+                capacityFromWidth = ctx.flipped
             ) - builtStackSize
             var dotId = -1
             for (i in 0 until groupStackSize) {
                 dotId = if (stackDotsAcrossGroups()) builtStackSize + i else i
-                val path = dotHelper.createDot(
-                    p,
-                    getDotCenter(p, dotId, p.stacksize()!!.toInt(), binWidthPx, ctx.flipped, geomHelper),
-                    dotSize * binWidthPx / 2
+                root.add(
+                    ctx.renderer.circle(
+                        getDotCenter(p, dotId, p.stacksize()!!.toInt(), binWidthPx, ctx.flipped, geomHelper),
+                        dotSize * binWidthPx / 2,
+                        // Dot outline width comes from the `stroke` aes (not `size`), so strokeFor takes a custom scaler.
+                        stroke = outlineStrokeFor(p) { AesScaling.strokeWidth(it, DataPointAesthetics::stroke) },
+                        fill = fillFor(p),
+                        seed = 31 * p.index() + dotId
+                    )
                 )
-                root.add(path.rootGroup)
             }
             buildHint(p, dotId, ctx, geomHelper, binWidthPx)
             builtStackSize += groupStackSize
@@ -171,30 +174,8 @@ open class DotplotGeom : GeomBase(), WithWidth {
         return geomHelper.toClient(x, 0.0, p)!!.add(if (flip) shift.flip() else shift.negate())
     }
 
-    internal class DotHelper(
-        pos: PositionAdjustment,
-        coord: CoordinateSystem,
-        ctx: GeomContext
-    ) : LinesHelper(pos, coord, ctx) {
-
-        fun createDot(p: DataPointAesthetics, center: DoubleVector, r: Double): LinePath {
-            val leftBound = center.add(DoubleVector(-r, 0.0))
-            val rightBound = center.add(DoubleVector(r, 0.0))
-
-            val builder = SvgPathDataBuilder(true)
-            builder.moveTo(leftBound)
-            builder.ellipticalArc(r, r, 0.0, largeArc = false, sweep = false, to = rightBound)
-            builder.ellipticalArc(r, r, 0.0, largeArc = false, sweep = false, to = leftBound)
-            builder.closePath()
-
-            val path = LinePath(builder)
-            decorate(path, p, true) { p -> AesScaling.strokeWidth(p, DataPointAesthetics::stroke) }
-
-            return path
-        }
-    }
-
     protected fun stackDotsAcrossGroups(): Boolean {
+        // Only histodot (shared fixed bins) can stack across groups; dot-density bins are per-group.
         return stackGroups && method == Method.HISTODOT
     }
 
@@ -203,11 +184,13 @@ open class DotplotGeom : GeomBase(), WithWidth {
         coord: CoordinateSystem,
         ctx: GeomContext,
         binWidthPx: Double,
-        stacksAreVertical: Boolean
+        capacityFromWidth: Boolean
     ): Int {
         val bounds = ctx.getAesBounds()
         val boundsPx = coord.toClient(bounds)!!
-        val stackCapacityPx = when (stacksAreVertical) {
+        // Stacks fill the axis perpendicular to their growth: capacity comes from width when they grow
+        // horizontally, from height when they grow vertically.
+        val stackCapacityPx = when (capacityFromWidth) {
             true -> boundsPx.width
             false -> boundsPx.height
         }.let {

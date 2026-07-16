@@ -10,6 +10,8 @@ import org.jetbrains.letsPlot.commons.geometry.DoubleVector
 import org.jetbrains.letsPlot.commons.intern.math.toRadians
 import org.jetbrains.letsPlot.commons.values.Color
 import org.jetbrains.letsPlot.core.plot.base.render.linetype.LineType
+import org.jetbrains.letsPlot.core.plot.base.render.primitive.Renderer
+import org.jetbrains.letsPlot.core.plot.base.render.primitive.CrispRenderer
 import org.jetbrains.letsPlot.core.plot.base.render.svg.*
 import org.jetbrains.letsPlot.core.plot.base.tooltip.TooltipSpec
 import org.jetbrains.letsPlot.core.plot.builder.presentation.Defaults.Common.Tooltip.COLOR_BAR_STROKE_WIDTH
@@ -37,7 +39,11 @@ import kotlin.math.max
 import kotlin.math.min
 
 class TooltipBox(
-    private val styleSheet: StyleSheet
+    private val styleSheet: StyleSheet,
+    private val renderer: Renderer = CrispRenderer,
+    // Wobbles the box outline (see the pointer path build); from the HAND_DRAWN_TOOLTIP_OUTLINE chrome
+    // adaptation (Theme.chromeAdaptations).
+    private val handDrawnOutline: Boolean = false,
 ) : SvgComponent() {
     enum class Orientation {
         VERTICAL,
@@ -50,6 +56,15 @@ class TooltipBox(
         UP,
         DOWN
     }
+
+    // Cache key for the hand-drawn (wobbled) outline: everything that shapes the outline except the
+    // moving pointer tip, so the wobble is recomputed only when the box shape actually changes.
+    private data class OutlineKey(
+        val width: Double,
+        val height: Double,
+        val borderRadius: Double,
+        val direction: PointerDirection?
+    )
 
     val contentRect
         get() = DoubleRectangle.span(
@@ -145,6 +160,13 @@ class TooltipBox(
         private var myBorderRadius = 0.0
         private val myHighlightPoint = SvgPathElement()
 
+        // Wobble the hand-drawn outline once and keep it: the wobble is deterministic given the outline
+        // points, but the moving pointer tip reshuffles arc-length anchors across the whole border each
+        // frame (jitter). Cache the 'd' keyed on the box's stable geometry (content size, corner radius,
+        // pointer side) — excluding the tip coordinate — so the shape holds one wobbled form per geom.
+        private var myCachedOutlineKey: OutlineKey? = null
+        private var myCachedOutlineD: SvgPathData? = null
+
         override fun buildComponent() {
             add(myPointerPath)
             add(myHighlightPoint)
@@ -194,7 +216,26 @@ class TooltipBox(
             val horFootingIndent = calculatePointerFootingIndent(contentRect.width)
 
             myPointerPath.d().set(
-                SvgPathDataBuilder().apply {
+                if (handDrawnOutline) {
+                    // Wobble the box outline into a cardinal-smoothed closed path, but only when its
+                    // stable geometry changes — otherwise reuse the cached form so the border doesn't
+                    // re-wobble (jitter) as the pointer tip moves. Renderer.path() contractually returns
+                    // an SvgPathElement; reuse only its 'd' so myPointerPath keeps its own stroke/fill.
+                    val key = OutlineKey(contentRect.width, contentRect.height, myBorderRadius, pointerDirection)
+                    if (key != myCachedOutlineKey || myCachedOutlineD == null) {
+                        myCachedOutlineD = renderer.path(
+                            pointerOutline(pointerCoord, vertFootingIndent, horFootingIndent),
+                            stroke = null,
+                            fill = null,
+                            closed = true,
+                            // Constant seed: the tooltip is a single element, so its wobble stays fixed as
+                            // the box moves. (0 reproduces the old first-point hash; the outline starts at (0,0).)
+                            seed = 0
+                        ).d().get()
+                        myCachedOutlineKey = key
+                    }
+                    myCachedOutlineD!!
+                } else SvgPathDataBuilder().apply {
                     with(contentRect) {
 
                         fun lineToIf(p: DoubleVector, isTrue: Boolean) {
@@ -274,6 +315,41 @@ class TooltipBox(
         private fun calculatePointerFootingIndent(sideLength: Double): Double {
             val footingLength = min(sideLength * POINTER_FOOTING_TO_SIDE_LENGTH_RATIO, MAX_POINTER_FOOTING_LENGTH)
             return (sideLength - footingLength) / 2
+        }
+
+        // The box outline + pointer as a vertex list (sharp corners) traversing the same ring as the
+        // crisp builder above, started at the top-left corner. The pointer tip is included only on the
+        // side it faces. The hand-drawn wobble is seeded with a constant at the call site (seed = 0), so
+        // it stays fixed as the box moves; the outline is recomputed only when the box geometry changes
+        // (see the OutlineKey cache).
+        private fun pointerOutline(
+            pointerCoord: DoubleVector,
+            vertFootingIndent: Double,
+            horFootingIndent: Double
+        ): List<DoubleVector> {
+            val points = ArrayList<DoubleVector>()
+            with(contentRect) {
+                fun addIf(p: DoubleVector, isTrue: Boolean) {
+                    if (isTrue) points.add(p)
+                }
+                points.add(DoubleVector(left, top))
+                points.add(DoubleVector(left, top - vertFootingIndent))
+                addIf(pointerCoord, pointerDirection == LEFT)
+                points.add(DoubleVector(left, bottom + vertFootingIndent))
+                points.add(DoubleVector(left, bottom))
+                points.add(DoubleVector(left + horFootingIndent, bottom))
+                addIf(pointerCoord, pointerDirection == DOWN)
+                points.add(DoubleVector(right - horFootingIndent, bottom))
+                points.add(DoubleVector(right, bottom))
+                points.add(DoubleVector(right, bottom + vertFootingIndent))
+                addIf(pointerCoord, pointerDirection == RIGHT)
+                points.add(DoubleVector(right, top - vertFootingIndent))
+                points.add(DoubleVector(right, top))
+                points.add(DoubleVector(right - horFootingIndent, top))
+                addIf(pointerCoord, pointerDirection == UP)
+                points.add(DoubleVector(left + horFootingIndent, top))
+            }
+            return points
         }
 
         private fun trianglePointer(pointerCoord: DoubleVector) = SvgPathDataBuilder().apply {

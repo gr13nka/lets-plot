@@ -10,7 +10,7 @@ import org.jetbrains.letsPlot.commons.values.Color
 import org.jetbrains.letsPlot.core.plot.base.Aes
 import org.jetbrains.letsPlot.core.plot.base.Scale
 import org.jetbrains.letsPlot.core.plot.base.ScaleMapper
-import org.jetbrains.letsPlot.core.plot.base.theme.LegendTheme
+import org.jetbrains.letsPlot.core.plot.base.theme.Theme
 import org.jetbrains.letsPlot.core.plot.builder.assemble.tiles.GeomLayerInfo
 
 internal object PlotGuidesAssemblerUtil {
@@ -54,7 +54,7 @@ internal object PlotGuidesAssemblerUtil {
         scale: Scale,
         scaleMapper: ScaleMapper<Color>,
         options: ColorBarOptions?,
-        theme: LegendTheme
+        theme: Theme
     ) = ColorBarAssembler(
         scaleName,
         transformedDomain,
