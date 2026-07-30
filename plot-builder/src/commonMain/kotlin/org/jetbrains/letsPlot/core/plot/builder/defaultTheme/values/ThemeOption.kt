@@ -141,6 +141,7 @@ object ThemeOption {
 
     const val GEOM = "geom"
     const val FLAVOR = "flavor"
+    const val GEOM_STYLE = "geom_style"
 
 
     // view element

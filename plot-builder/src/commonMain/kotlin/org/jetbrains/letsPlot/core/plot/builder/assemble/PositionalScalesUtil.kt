@@ -166,7 +166,7 @@ object PositionalScalesUtil {
             true -> YOrientationAesthetics(aesthetics)
             false -> aesthetics
         }.let { aesthetics ->
-            val geomCtx = GeomContextBuilder().aesthetics(aesthetics).build()
+            val geomCtx = GeomContextBuilder.forMeasurement().aesthetics(aesthetics).build()
             val rangesXY = computeLayerDryRunXYRangesAfterPosAdjustment(layer, aesthetics, geomCtx)
 
             // return to "normal" orientation
@@ -176,7 +176,7 @@ object PositionalScalesUtil {
             }
         }
 
-        val geomCtx = GeomContextBuilder().aesthetics(aesthetics).build()
+        val geomCtx = GeomContextBuilder.forMeasurement().aesthetics(aesthetics).build()
         val (xRangeAfterSizeExpand, yRangeAfterSizeExpand) =
             computeLayerDryRunXYRangesAfterSizeExpand(layer, aesthetics, geomCtx, coordProvider)
 

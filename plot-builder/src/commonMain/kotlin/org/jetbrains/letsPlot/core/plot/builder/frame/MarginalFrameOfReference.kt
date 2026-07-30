@@ -12,6 +12,7 @@ import org.jetbrains.letsPlot.commons.values.Color
 import org.jetbrains.letsPlot.core.interact.UnsupportedInteractionException
 import org.jetbrains.letsPlot.core.plot.base.CoordinateSystem
 import org.jetbrains.letsPlot.core.plot.base.PlotContext
+import org.jetbrains.letsPlot.core.plot.base.render.primitive.DrawingStyle
 import org.jetbrains.letsPlot.core.plot.base.render.svg.SvgComponent
 import org.jetbrains.letsPlot.core.plot.base.tooltip.GeomTargetCollector
 import org.jetbrains.letsPlot.core.plot.builder.ComponentTransientState
@@ -25,7 +26,8 @@ internal class MarginalFrameOfReference(
     private val adjustedDomain: DoubleRectangle,
     private val coord: CoordinateSystem,
     private val plotBackground: Color,
-    private val isDebugDrawing: Boolean
+    private val isDebugDrawing: Boolean,
+    private val drawingStyle: DrawingStyle
 ) : FrameOfReference() {
     override val transientState: ComponentTransientState = DummyTransientState()
 
@@ -52,6 +54,7 @@ internal class MarginalFrameOfReference(
             targetCollector,
             plotBackground,
             DoubleRectangle(DoubleVector.ZERO, DoubleVector.ZERO),
+            drawingStyle,
         )
 
         layerComponent.moveTo(geomBounds.origin)

@@ -9,6 +9,7 @@ import org.jetbrains.letsPlot.commons.geometry.DoubleRectangle
 import org.jetbrains.letsPlot.commons.values.Color
 import org.jetbrains.letsPlot.core.plot.base.*
 import org.jetbrains.letsPlot.core.plot.base.geom.annotation.Annotation
+import org.jetbrains.letsPlot.core.plot.base.render.primitive.DrawingStyle
 import org.jetbrains.letsPlot.core.plot.base.theme.FontFamilyRegistry
 import org.jetbrains.letsPlot.core.plot.base.tooltip.GeomTargetCollector
 
@@ -44,6 +45,8 @@ interface ImmutableGeomContext : GeomContext {
         fun scaleFactor(scaleFactor: Double): Builder
 
         fun messageConsumer(messageConsumer: (String) -> Unit): Builder
+
+        fun drawingStyle(drawingStyle: DrawingStyle): Builder
 
         fun build(): ImmutableGeomContext
     }

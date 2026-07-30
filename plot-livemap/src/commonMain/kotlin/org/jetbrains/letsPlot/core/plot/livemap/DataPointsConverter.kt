@@ -237,8 +237,7 @@ internal class DataPointsConverter(
                 val end = it.toLocation(Aes.XEND, Aes.YEND) ?: return@process emptyList()
 
                 // not set arrowSpec - livemap handles it via setArrowSpec() call
-                val elementHelper = GeomHelper.SvgElementHelper()
-                    .noSvg()
+                val elementHelper = GeomHelper.SvgElementHelper.measuring()
                     .geometryWithPadding(false) // padding should be re-computed on each zoom level
 
                 val (_, geometry) = elementHelper.createCurve(start, end, geom.curvature, geom.angle, geom.ncp, it) ?: return@process emptyList()
@@ -255,8 +254,7 @@ internal class DataPointsConverter(
                 val angle = it.finiteOrNull(Aes.ANGLE) ?: return@process emptyList()
                 val radius = it.finiteOrNull(Aes.RADIUS) ?: return@process emptyList()
 
-                val elementHelper = GeomHelper.SvgElementHelper()
-                    .noSvg()
+                val elementHelper = GeomHelper.SvgElementHelper.measuring()
 
                 val (_, geometry) = elementHelper.createSpoke(base, angle, radius, geom.pivot.factor, it) ?: return@process emptyList()
                 geometry

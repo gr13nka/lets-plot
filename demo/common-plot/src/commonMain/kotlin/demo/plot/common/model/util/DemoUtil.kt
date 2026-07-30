@@ -26,6 +26,6 @@ object DemoUtil {
     }
 
     fun geomContext(aes: Aesthetics): GeomContext {
-        return GeomContextBuilder().aesthetics(aes).build()
+        return GeomContextBuilder.forMeasurement().aesthetics(aes).build()
     }
 }

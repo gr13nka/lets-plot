@@ -18,6 +18,7 @@ import org.jetbrains.letsPlot.core.plot.base.aes.AesScaling
 import org.jetbrains.letsPlot.core.plot.base.aes.AestheticsUtil
 import org.jetbrains.letsPlot.core.plot.base.geom.util.GeomUtil.createPathDataFromRectangle
 import org.jetbrains.letsPlot.core.plot.base.geom.util.GeomUtil.createPaths
+import org.jetbrains.letsPlot.core.plot.base.render.primitive.isRing
 import org.jetbrains.letsPlot.core.plot.base.render.svg.LinePath
 import org.jetbrains.letsPlot.datamodel.svg.dom.SvgNode
 
@@ -31,6 +32,25 @@ open class LinesHelper(
     private var myAlphaEnabled = true
     protected var myResamplingEnabled = false
     protected var myResamplingPrecision = PIXEL_PRECISION
+
+    /** The one place a [LinePath] is built, so no call site picks a DrawingStyle or a seed. */
+    private fun createLinePath(
+        subPaths: List<List<DoubleVector>>,
+        ring: Boolean,
+        aes: DataPointAesthetics
+    ): LinePath {
+        return LinePath(drawingStyle.path(subPaths, ring, dataPointIndex = aes.index()))
+    }
+
+    /** Construction and decoration as one step, so a call site cannot skip or double the decoration. */
+    protected fun createLinePath(
+        subPaths: List<List<DoubleVector>>,
+        ring: Boolean,
+        aes: DataPointAesthetics,
+        filled: Boolean
+    ): LinePath {
+        return createLinePath(subPaths, ring, aes).also { decorate(it, aes, filled) }
+    }
 
     // Polar coordinate system with discrete X scale.
     fun meetsRadarPlotReq(): Boolean {
@@ -66,13 +86,7 @@ open class LinesHelper(
                 false -> path.coordinates
             }
 
-            val element = when (filled) {
-                true -> LinePath.polygon(visualPath)
-                false -> LinePath.line(visualPath)
-            }
-
-            decorate(element, path.aes, filled)
-            element
+            createLinePath(listOf(visualPath), ring = isRing(visualPath), aes = path.aes, filled = filled)
         }
     }
 
@@ -120,10 +134,9 @@ open class LinesHelper(
         val svg = clientPolygonData.map { polygon ->
             val element = polygon.coordinates
                 .map { douglasPeucker(it, DOUGLAS_PEUCKER_PIXEL_THRESHOLD) }
-                .let(::insertPathSeparators)
-                .let { LinePath.polygon(it) }
+                // PolygonData requires closed rings
+                .let { createLinePath(it, ring = true, aes = polygon.aes, filled = true) }
 
-            decorate(element, polygon.aes, filled = true)
             element.rootGroup
         }
 
@@ -202,8 +215,7 @@ open class LinesHelper(
                     prev = point
                 }
 
-                val line = LinePath.line(newPoints)
-                decorate(line, subPath.aes, filled = false)
+                val line = createLinePath(listOf(newPoints), ring = false, aes = subPath.aes, filled = false)
                 linePaths.add(line)
             }
         }
@@ -249,11 +261,16 @@ open class LinesHelper(
             val points = pathData.coordinates
 
             if (points.isNotEmpty()) {
-                val path = LinePath.polygon(
-                    when {
-                        simplifyBorders -> douglasPeucker(points, DOUGLAS_PEUCKER_PIXEL_THRESHOLD)
-                        else -> points
-                    }
+                val path = createLinePath(
+                    listOf(
+                        when {
+                            simplifyBorders -> douglasPeucker(points, DOUGLAS_PEUCKER_PIXEL_THRESHOLD)
+                            else -> points
+                        }
+                    ),
+                    // A ring whose ends never coincide - isRing() would measure it open.
+                    ring = true,
+                    aes = pathData.aes
                 )
                 decorateFillingPart(path, pathData.aes)
                 path
@@ -319,19 +336,6 @@ open class LinesHelper(
     }
 
     companion object {
-        private fun insertPathSeparators(rings: Iterable<List<DoubleVector>>): List<DoubleVector?> {
-            val result = ArrayList<DoubleVector?>()
-            for (ring in rings) {
-                if (!result.isEmpty()) {
-                    result.add(LinePath.END_OF_SUBPATH) // this is polygon's path separator understood by PathLine component
-                }
-
-                result.addAll(ring)
-            }
-
-            return result
-        }
-
         fun splitByStyle(pathData: PathData): List<PathData> {
             return pathData.points
                 .splitBy(

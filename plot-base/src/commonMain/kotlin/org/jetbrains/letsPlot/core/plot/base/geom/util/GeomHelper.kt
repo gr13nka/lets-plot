@@ -22,6 +22,10 @@ import org.jetbrains.letsPlot.core.plot.base.geom.DimensionUnit
 import org.jetbrains.letsPlot.core.plot.base.geom.DimensionUnit.*
 import org.jetbrains.letsPlot.core.plot.base.geom.util.ArrowSpec.Companion.toArrowAes
 import org.jetbrains.letsPlot.core.plot.base.geom.util.ArrowSpec.Type.CLOSED
+import org.jetbrains.letsPlot.core.plot.base.render.primitive.CrispStyle
+import org.jetbrains.letsPlot.core.plot.base.render.primitive.DrawingStyle
+import org.jetbrains.letsPlot.core.plot.base.render.primitive.asNode
+import org.jetbrains.letsPlot.core.plot.base.render.primitive.isRing
 import org.jetbrains.letsPlot.core.plot.base.render.svg.StrokeDashArraySupport
 import org.jetbrains.letsPlot.core.plot.base.render.svg.lineString
 import org.jetbrains.letsPlot.datamodel.svg.dom.*
@@ -35,6 +39,9 @@ open class GeomHelper(
     protected val coord: CoordinateSystem,
     internal val ctx: GeomContext
 ) {
+    /** The drawing seam. `protected` so a geom cannot reach through its helper to the style. */
+    protected val drawingStyle: DrawingStyle get() = ctx.drawingStyle
+
     fun toClient(location: DoubleVector, p: DataPointAesthetics): DoubleVector? {
         return coord.toClient(adjust(location, p, pos, ctx))
     }
@@ -102,12 +109,25 @@ open class GeomHelper(
     }
 
     fun createSvgElementHelper(): SvgElementHelper {
-        return SvgElementHelper(::toClient)
+        return SvgElementHelper(::toClient, drawingStyle)
     }
 
     class SvgElementHelper(
-        private val toClient: (DoubleVector, DataPointAesthetics) -> DoubleVector? = { v, _ -> v }
+        private val toClient: (DoubleVector, DataPointAesthetics) -> DoubleVector?,
+        private val drawingStyle: DrawingStyle
     ) {
+        companion object {
+            /** Deliberately crisp: draws decoration a theme must not vary. */
+            fun crisp(
+                toClient: (DoubleVector, DataPointAesthetics) -> DoubleVector? = { v, _ -> v }
+            ) = SvgElementHelper(toClient, CrispStyle)
+
+            /** Geometry extraction only: no SVG is emitted, so no style applies. */
+            fun measuring(
+                toClient: (DoubleVector, DataPointAesthetics) -> DoubleVector? = { v, _ -> v }
+            ) = crisp(toClient).noSvg()
+        }
+
         private var myGeometryWithPadding: Boolean = true
         private var myNoSvg: Boolean = false
         private var myInterpolation: Interpolation? = null
@@ -237,29 +257,31 @@ open class GeomHelper(
 
             val lineStringAfterPadding = padLineString(lineString, p, padArrow = true)
 
-            val lineElement = if (lineStringAfterPadding.size == 2) {
-                // Simple SvgLineElement is enough for a straight line without arrow
-                SvgLineElement().apply {
-                    x1().set(lineStringAfterPadding.first().x)
-                    y1().set(lineStringAfterPadding.first().y)
-                    x2().set(lineStringAfterPadding.last().x)
-                    y2().set(lineStringAfterPadding.last().y)
-                }
-            } else {
+            // DrawingStyle's seed must be the datapoint's index - derived once here, so no branch picks its own.
+            val dataPointIndex = p.index()
+
+            val lineShape = if (lineStringAfterPadding.size == 2) {
+                drawingStyle.line(lineStringAfterPadding.first(), lineStringAfterPadding.last(), dataPointIndex)
+            } else if (myInterpolation != null) {
+                // Exempt from the DrawingStyle: an interpolated path is a spline, not a polyline.
                 SvgPathElement().apply {
                     d().set(
-                        if (myInterpolation != null) {
-                            SvgPathDataBuilder()
-                                .moveTo(lineStringAfterPadding.first())
-                                .interpolatePoints(lineStringAfterPadding, myInterpolation!!)
-                                .build()
-                        } else {
-                            SvgPathDataBuilder().lineString(lineStringAfterPadding).build()
-                        }
+                        SvgPathDataBuilder()
+                            .moveTo(lineStringAfterPadding.first())
+                            .interpolatePoints(lineStringAfterPadding, myInterpolation!!)
+                            .build()
                     )
                 }
+            } else {
+                drawingStyle.path(
+                    listOf(lineStringAfterPadding),
+                    // A path may arrive closed, and padding can re-open it - so measure the final geometry.
+                    ring = isRing(lineStringAfterPadding),
+                    dataPointIndex = dataPointIndex
+                )
             }
-            decorate(lineElement, p, myStrokeAlphaEnabled, strokeScaler, filled)
+            decorate(lineShape, p, myStrokeAlphaEnabled, strokeScaler, filled)
+            val lineElement = lineShape.asNode()
 
             val arrowElements = myArrowSpec?.let { arrowSpec ->
                 val (startHead, endHead) = ArrowSupport.createArrowHeads(

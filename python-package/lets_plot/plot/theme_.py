@@ -95,7 +95,9 @@ def theme(*,
 
           label_text=None,
 
-          geom=None
+          geom=None,
+
+          geom_style=None
           ):
     """
     Use ``theme()`` to modify individual components of a theme,
@@ -384,6 +386,15 @@ def theme(*,
     geom : dict
         Color settings for geometries.
         Set `element_geom() <https://lets-plot.org/python/pages/api/lets_plot.element_geom.html>`__ to specify new values for the named colors.
+    geom_style : {'crisp', 'xkcd'}, default='crisp'
+        Drawing style for the geometries inside the panel.
+
+        - 'crisp' : exact geometry.
+        - 'xkcd' : hand-drawn look - lines and shapes wobble off their true course.
+
+        Affects geometries only: axes, grid, legend and tooltips stay crisp.
+        The style applies to geometry drawn as lines, paths, polygons and rectangles;
+        geoms rendered through other primitives keep their normal look.
 
     Returns
     -------

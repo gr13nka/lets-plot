@@ -7,11 +7,14 @@ package org.jetbrains.letsPlot.core.plot.base.theme
 
 import org.jetbrains.letsPlot.core.plot.base.GeomKind
 import org.jetbrains.letsPlot.core.plot.base.aes.GeomTheme
+import org.jetbrains.letsPlot.core.plot.base.render.primitive.DrawingStyle
 
 interface Theme {
     val fontFamilyRegistry: FontFamilyRegistry
 
     val exponentFormat: ExponentFormat
+
+    val drawingStyle: DrawingStyle
 
     fun horizontalAxis(flipAxis: Boolean): AxisTheme
 

@@ -1019,6 +1019,7 @@ object Option {
 
         const val GEOM = ThemeOption.GEOM
         const val FLAVOR = ThemeOption.FLAVOR
+        const val GEOM_STYLE = ThemeOption.GEOM_STYLE
 
         // view element
         const val ELEMENT_BLANK = ThemeOption.ELEMENT_BLANK_SHORTHAND

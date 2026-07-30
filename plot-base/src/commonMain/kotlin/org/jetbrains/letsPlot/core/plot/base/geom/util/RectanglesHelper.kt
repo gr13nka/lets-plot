@@ -11,11 +11,12 @@ import org.jetbrains.letsPlot.commons.intern.typedGeometry.algorithms.AdaptiveRe
 import org.jetbrains.letsPlot.commons.intern.typedGeometry.algorithms.AdaptiveResampler.Companion.resample
 import org.jetbrains.letsPlot.core.commons.geometry.PolylineSimplifier
 import org.jetbrains.letsPlot.core.plot.base.*
+import org.jetbrains.letsPlot.core.plot.base.render.primitive.asNode
 import org.jetbrains.letsPlot.core.plot.base.render.svg.lineString
 import org.jetbrains.letsPlot.datamodel.svg.dom.SvgNode
 import org.jetbrains.letsPlot.datamodel.svg.dom.SvgPathDataBuilder
 import org.jetbrains.letsPlot.datamodel.svg.dom.SvgPathElement
-import org.jetbrains.letsPlot.datamodel.svg.dom.SvgRectElement
+import org.jetbrains.letsPlot.datamodel.svg.dom.SvgShape
 import org.jetbrains.letsPlot.datamodel.svg.dom.slim.SvgSlimElements
 import org.jetbrains.letsPlot.datamodel.svg.dom.slim.SvgSlimGroup
 
@@ -26,6 +27,17 @@ class RectanglesHelper(
     ctx: GeomContext,
     private val geometryFactory: (DataPointAesthetics) -> DoubleRectangle?
 ) : GeomHelper(pos, coord, ctx) {
+    /** The one place a rect element is built, so no call site picks a DrawingStyle or a seed. */
+    private fun createSvgRect(rect: DoubleRectangle, aes: DataPointAesthetics): SvgShape {
+        return drawingStyle.rect(rect, dataPointIndex = aes.index())
+    }
+
+    /** The one place a resampled rect outline is built, so no call site picks a DrawingStyle or a seed. */
+    private fun createSvgPolyRect(polyRect: List<DoubleVector>, aes: DataPointAesthetics): SvgPathElement {
+        // A ring by construction, not by measurement.
+        return drawingStyle.path(listOf(polyRect), ring = true, dataPointIndex = aes.index())
+    }
+
     // TODO: Replace with SvgRectHelper
     fun createNonLinearRectangles(handler: (DataPointAesthetics, SvgNode, List<DoubleVector>) -> Unit) {
         myAesthetics.dataPoints().forEach { p ->
@@ -41,8 +53,7 @@ class RectanglesHelper(
                     )
                 ) { toClient(it, p) }
 
-                val svgPoly = SvgPathElement()
-                svgPoly.d().set(SvgPathDataBuilder().lineString(polyRect).build())
+                val svgPoly = createSvgPolyRect(polyRect, p)
 
                 decorate(svgPoly, p)
                 handler(p, svgPoly, polyRect)
@@ -54,9 +65,9 @@ class RectanglesHelper(
         myAesthetics.dataPoints().forEach { p ->
             geometryFactory(p)?.let { rect ->
                 val clientRect = toClient(rect, p) ?: return@let
-                val svgRect = SvgRectElement(clientRect)
+                val svgRect = createSvgRect(clientRect, p)
                 decorate(svgRect, p)
-                handler(p, svgRect, clientRect)
+                handler(p, svgRect.asNode(), clientRect)
             }
         }
     }
@@ -68,10 +79,10 @@ class RectanglesHelper(
             val p = myAesthetics.dataPointAt(index)
             val clientRect = geometryFactory(p) ?: continue
 
-            val svgRect = SvgRectElement(clientRect)
+            val svgRect = createSvgRect(clientRect, p)
             decorate(svgRect, p)
 
-            result.add(svgRect)
+            result.add(svgRect.asNode())
         }
 
         return result

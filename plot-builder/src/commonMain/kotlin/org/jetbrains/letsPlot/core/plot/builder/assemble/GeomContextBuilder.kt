@@ -12,6 +12,8 @@ import org.jetbrains.letsPlot.commons.values.Font
 import org.jetbrains.letsPlot.core.commons.data.SeriesUtil
 import org.jetbrains.letsPlot.core.plot.base.*
 import org.jetbrains.letsPlot.core.plot.base.geom.annotation.Annotation
+import org.jetbrains.letsPlot.core.plot.base.render.primitive.CrispStyle
+import org.jetbrains.letsPlot.core.plot.base.render.primitive.DrawingStyle
 import org.jetbrains.letsPlot.core.plot.base.theme.FontFamilyRegistry
 import org.jetbrains.letsPlot.core.plot.base.tooltip.GeomTargetCollector
 import org.jetbrains.letsPlot.core.plot.base.tooltip.NullGeomTargetCollector
@@ -32,6 +34,15 @@ class GeomContextBuilder : ImmutableGeomContext.Builder {
     private var contentBounds: DoubleRectangle? = null
     private var scaleFactor: Double = 1.0
     private var messageConsumer: (String) -> Unit = {}
+    // No default, deliberately: `build()` fails rather than let a call site opt out in silence.
+    private var drawingStyle: DrawingStyle? = null
+
+    companion object {
+        /** Preset for a context that only measures and never draws: no style choice is being made. */
+        fun forMeasurement(): ImmutableGeomContext.Builder {
+            return GeomContextBuilder().drawingStyle(CrispStyle)
+        }
+    }
 
     constructor()
 
@@ -46,6 +57,7 @@ class GeomContextBuilder : ImmutableGeomContext.Builder {
         backgroundColor = ctx.backgroundColor
         plotContext = ctx.plotContext
         coordinateSystem = ctx._coordinateSystem
+        drawingStyle = ctx.drawingStyle
     }
 
     override fun flipped(flipped: Boolean): ImmutableGeomContext.Builder {
@@ -118,6 +130,11 @@ class GeomContextBuilder : ImmutableGeomContext.Builder {
         return this
     }
 
+    override fun drawingStyle(drawingStyle: DrawingStyle): ImmutableGeomContext.Builder {
+        this.drawingStyle = drawingStyle
+        return this
+    }
+
     override fun build(): ImmutableGeomContext {
         return MyGeomContext(this)
     }
@@ -138,6 +155,10 @@ class GeomContextBuilder : ImmutableGeomContext.Builder {
         override val annotation = b.annotation
         override val backgroundColor = b.backgroundColor
         override val plotContext: PlotContext = b.plotContext
+        override val drawingStyle: DrawingStyle = requireNotNull(b.drawingStyle) {
+            "No drawingStyle: call GeomContextBuilder.drawingStyle(...). Use GeomContextBuilder.forMeasurement() " +
+                    "if this context only measures and never draws."
+        }
 
         private val fontFamilyRegistry: FontFamilyRegistry? = b.fontFamilyRegistry
 

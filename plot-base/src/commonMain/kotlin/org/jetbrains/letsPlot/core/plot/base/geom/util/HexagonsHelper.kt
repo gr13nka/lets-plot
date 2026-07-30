@@ -44,8 +44,7 @@ class HexagonsHelper(
                     it.firstOrNull() ?: emptyList()
                 }
 
-                val element = LinePath.polygon(simplified)
-                decorate(element, p, true)
+                val element = createLinePath(listOf(simplified), ring = true, aes = p, filled = true)
                 hexagons.add(element)
 
                 createTooltips(p, simplified)
@@ -53,8 +52,7 @@ class HexagonsHelper(
                 // Correct hexagon should have 7 points, including the closing one.
                 val clientHex = hex.mapNotNull { toClient(it, p) }.takeIf { it.size == 7 } ?: continue
 
-                val element = LinePath.polygon(clientHex)
-                decorate(element, p, true)
+                val element = createLinePath(listOf(clientHex), ring = true, aes = p, filled = true)
                 hexagons.add(element)
 
                 createTooltips(p, clientHex)

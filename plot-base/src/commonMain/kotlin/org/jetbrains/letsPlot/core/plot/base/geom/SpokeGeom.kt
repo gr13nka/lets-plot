@@ -73,7 +73,8 @@ class SpokeGeom : GeomBase(), WithWidth, WithHeight {
         val base = p.toLocation(Aes.X, Aes.Y)?.flipIf(coordAes != spanAxisAes) ?: return null
         val angle = p.finiteOrNull(Aes.ANGLE) ?: return null
         val radius = p.finiteOrNull(Aes.RADIUS) ?: return null
-        val elementHelper = SvgElementHelper()
+        // Geometry only: the SVG this builds is discarded.
+        val elementHelper = SvgElementHelper.crisp()
         val (_, geometry) = elementHelper.createSpoke(base, angle, radius, pivot.factor, p) ?: return null
 
         require(geometry.size == 2)

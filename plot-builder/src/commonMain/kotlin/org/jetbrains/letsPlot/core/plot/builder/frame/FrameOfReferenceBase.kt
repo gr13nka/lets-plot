@@ -20,6 +20,8 @@ import org.jetbrains.letsPlot.core.plot.builder.FrameOfReference
 import org.jetbrains.letsPlot.core.plot.builder.GeomLayer
 import org.jetbrains.letsPlot.core.plot.builder.LayerRendererUtil
 import org.jetbrains.letsPlot.core.plot.builder.SvgLayerRenderer
+import org.jetbrains.letsPlot.core.plot.base.render.primitive.CrispStyle
+import org.jetbrains.letsPlot.core.plot.base.render.primitive.DrawingStyle
 import org.jetbrains.letsPlot.core.plot.builder.assemble.GeomContextBuilder
 import org.jetbrains.letsPlot.core.plot.builder.layout.GeomMarginsLayout
 import org.jetbrains.letsPlot.core.plot.builder.layout.TileLayoutInfo
@@ -67,7 +69,8 @@ internal abstract class FrameOfReferenceBase(
             flipAxis,
             targetCollector,
             backgroundColor = if (theme.panel().showRect()) theme.panel().rectFill() else theme.plot().backgroundFill(),
-            bounds = layoutInfo.geomContentBounds
+            bounds = layoutInfo.geomContentBounds,
+            drawingStyle = theme.drawingStyle
         )
     }
 
@@ -167,6 +170,9 @@ internal abstract class FrameOfReferenceBase(
             targetCollector: GeomTargetCollector,
             backgroundColor: Color,
             bounds: DoubleRectangle = DoubleRectangle(DoubleVector.ZERO, DoubleVector.ZERO),
+            // Defaulted for demo/test entry points only: they have no theme, so no style to inherit.
+            // Production callers pass the theme's style explicitly.
+            drawingStyle: DrawingStyle = CrispStyle,
         ): SvgComponent {
             val rendererData = LayerRendererUtil.createLayerRendererData(layer)
 
@@ -212,6 +218,7 @@ internal abstract class FrameOfReferenceBase(
                 .contentBounds(bounds)
                 .scaleFactor(plotContext.getScaleFactor())
                 .messageConsumer(plotContext.getMessageConsumer())
+                .drawingStyle(drawingStyle)
                 .build()
 
             val pos = rendererData.pos

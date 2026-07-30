@@ -163,6 +163,7 @@ internal abstract class FrameOfReferenceProviderBase(
                 coord,
                 plotBackground,
                 debugDrawing,
+                theme.drawingStyle,
             )
         }
     }

@@ -234,6 +234,7 @@ class ThemeConfig constructor(
                             key in setOf(
                                 Option.Meta.NAME,                  // a name of a predefined theme.
                                 ThemeOption.FLAVOR,
+                                ThemeOption.GEOM_STYLE,
                                 ThemeOption.LEGEND_POSITION,       // for 'guide collect' in the container feature.
                                 ThemeOption.LEGEND_JUSTIFICATION,
                                 ThemeOption.LEGEND_DIRECTION,

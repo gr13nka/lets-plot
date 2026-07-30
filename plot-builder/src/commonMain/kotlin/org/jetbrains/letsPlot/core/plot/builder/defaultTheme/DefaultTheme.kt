@@ -7,6 +7,8 @@ package org.jetbrains.letsPlot.core.plot.builder.defaultTheme
 
 import org.jetbrains.letsPlot.core.plot.base.GeomKind
 import org.jetbrains.letsPlot.core.plot.base.aes.GeomTheme
+import org.jetbrains.letsPlot.core.plot.base.render.primitive.CrispStyle
+import org.jetbrains.letsPlot.core.plot.base.render.primitive.DrawingStyle
 import org.jetbrains.letsPlot.core.plot.base.theme.*
 import org.jetbrains.letsPlot.core.plot.base.theme.ExponentFormat.Companion.DEF_EXPONENT_FORMAT
 import org.jetbrains.letsPlot.core.plot.builder.defaultTheme.values.ThemeOption
@@ -25,6 +27,10 @@ class DefaultTheme internal constructor(
     private val annotations = DefaultAnnotationsTheme(options, fontFamilyRegistry)
     private val geometries: MutableMap<GeomKind, GeomTheme> = HashMap()
     private val colors = DefaultColorTheme(options, fontFamilyRegistry)
+
+    override val drawingStyle: DrawingStyle = options[ThemeOption.GEOM_STYLE]
+        ?.let { DrawingStyles.forName(it.toString()) }
+        ?: CrispStyle
 
     override val exponentFormat: ExponentFormat
         get() {
